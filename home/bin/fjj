@@ -217,6 +217,8 @@ fi
 export TRM="gnome-terminal "
 # TRM shoudl be a terminal app wrapper expected 1st param as a command
 # since syntax of command param may differ (e.g. -e, -x, --command etc.)
+export XTERM=jjterm
+export TTERM=jjtermt
 export TRM="${XJJ_TERM:-jjterm}"
 #export TRM="lxterminal --geometry=130x32"
 # export TRM="t3 --geometry=130x32"
@@ -298,18 +300,21 @@ edit_vim () {
   local -r FOUT=$(mktemp "/tmp/${TMPFX}.XXXXXX")
   local RABSP
   local VID
+  local LTERM
   # trim meta info on the left, all cols till delimiter
   trimmeta $FIN $FTMP
   cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
   #${TRM} "less ${FTMP2}"
   echo Viewing files ...
   VID=0
+  LTERM=$TRM
+  [ "$TMUX" ] && LTERM=$TTERM
   cat $FTMP2 | while read RABSP
   do
       (( VID++ ))
       export FPANETIT="scp://$RCONN//$RABSP"
       export FWINDTIT="E${VID}:$(basename $RABSP)"
-      ${TRM}  " vimx \"scp://$RCONN//$RABSP\" -c 'colorscheme torte' -c 'set title' "
+      ${LTERM}  " vimx \"scp://$RCONN//$RABSP\" -c 'colorscheme torte' -c 'set title' "
   done
 }
 
@@ -338,6 +343,7 @@ view_less () {
   local -r FOUT=$(mktemp "/tmp/${TMPFX}.XXXXXX")
   local RABSP
   local VID
+  local LTERM
   # trim meta info on the left, all cols till delimiter
   trimmeta $FIN $FTMP
   cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
@@ -345,12 +351,14 @@ view_less () {
   echo Viewing files ...
   ## pushd $SSHVIMRP && tar zc . -C $(dirname $LSHELL_AUXRC) $(basename $LSHELL_AUXRC)  | ssh $RCONN "mkdir -p $RVIMRP ; tar zxf - -C $RVIMRP " ; popd
   VID=0
+  LTERM=$TRM
+  [ "$TMUX" ] && LTERM=$TTERM
   cat $FTMP2 | while read RABSP
   do
       (( VID++ ))
       export FPANETIT="scp://$RCONN//$RABSP"
       export FWINDTIT="V${VID}:$(basename $RABSP)"
-      ${TRM}  "ssh -q -tt $RCONN \" $RSHEV;  { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }; less $RABSP || { echo Please read above, there must be some error msg ;read K; } \" "
+      ${LTERM}  "ssh -q -tt $RCONN \" $RSHEV;  { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }; less $RABSP || { echo Please read above, there must be some error msg ;read K; } \" "
   done
 }
 
@@ -464,11 +472,13 @@ ts2_them () {
 
 callshell () {
   local -r RF=${RDIR%/}/$(echo "$1" | sed  "s/^.*${FZFDLM}//g;s,^./,,g")
+  local LTERM
   echo Remotefile ot run shell around: $RF
   ### scp -q $LINCVIMINT_SRC $RCONN:$RINCVIMINT_SRC
   ## pushd $SSHVIMRP && tar zc . -C $(dirname $LSHELL_AUXRC) $(basename $LSHELL_AUXRC)  | ssh $RCONN "mkdir -p $RVIMRP ; tar zxf - -C $RVIMRP " ; popd
   #${TRM} "ssh -t ${RCONN} $RSHEV ; cd \$(dirname ${RF}) ; exec \${SHELL} "
-  ${TRM} "ssh -q -tt ${RCONN} \" $RSHEV ; cd \$(dirname ${RF}) ; { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }; \${SHELL}  \" "
+  [ $TMUX ] && LTERM=$TTERM
+  ${LTERM} "ssh -q -tt ${RCONN} \" $RSHEV ; cd \$(dirname ${RF}) ; { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }; \${SHELL}  \" "
 }
 
 callRCshell () {
