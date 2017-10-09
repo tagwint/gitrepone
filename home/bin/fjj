@@ -1,0 +1,604 @@
+#!/bin/bash
+#Fuzzy select of remote file/dir
+set -x
+#_RCONN=${1?"No remote [user@]host specified (1st)"}
+_RCONN=${1}
+
+# local folder to keep downloads
+export GRABDIR=${VX_DLSINK:-${HOME}/000dlsink}
+# field delimiter in fzf output
+export FZFDLM='->'
+
+[[ -x "${GRABDIR}" ]] || mkdir -p ${GRABDIR}
+
+myself=$0
+thisbn=$(basename "$0")
+thispid=$$
+
+export TMPFX=${thisbn}_${thispid}
+
+export LINCVIMINT_SRC=$SSHVIMRP/vimrc.inc
+export LVIMRP=$SSHVIMRP
+export LSHELL_AUXRC=$HOME/.rsshrc
+export RVIMRP=/tmp/.__${thispid}VRP
+export RINCVIMINT_SRC=${RVIMRP}/vimrc.inc
+export RSHELL_AUXRC=${RVIMRP}/.rsshrc
+
+dpf () {
+    local -r FN=${1:?"No file to printout specified"}
+    [[ -r "$FN" ]] || { echo "File to printout does not exist or cannot be read [$FN]"; return 1; }
+    echo -- BEGIN debug printout of file "$FN"
+    cat "$FN"
+    echo -- __END debug printout of file "$FN" 
+}
+     
+xaste () 
+{ 
+    local -r f=$(mktemp "/tmp/${TMPFX}.XXXX")
+    cat - > "$f";
+    local -r URL=${1:-$HBLOGNET};
+    local -r u=$(curl -s  --data-binary "@$f" "$URL/documents" | awk -v HB="$URL" -F '"' '{print $4}');
+    echo "${URL}/${u}"
+}
+     
+handle_action () {
+    local -r ACT=${1:-none}
+    local -r RCO=${2?"No remote connection string for handling action specified"}
+    local -r FSR=${3?"No file with result of selection specified to handle"}
+    local -r RDIR=${4?"No remote dir specified to handle"}
+    local  f
+    local -r CNT=$(wc -l "$FSR")
+    case ${ACT:-none} in
+	none)
+	if [[ "$CNT" -eq 1 ]]; then
+	    echo Single choice made
+	    local -r SI=$(cat "$FSR")
+	    echo _Selected Item was:  "$SI" 
+	    echo TO EDIT SUDO EMACS:  ec \"/ssh:${RCONN}$'|sudo:'${RHOST}:${SI}\"
+	    echo __TO EDIT IN EMACS:  "ec /ssh:${RCONN}:${SI}"
+	    echo ___TO CAT TO HASTE:  "ssh ${RCONN} cat ${SI} $'| haste'"
+	    echo _______TO DOWNLOAD:  "rsync -aP ${RCONN}:${SI} ./"
+	else
+	    echo Multiple choice made
+    	    echo Selected Items :
+	    cat "$FSR" 
+	fi
+	;;
+	grab)
+            set -x
+	    local -r GRABFN="${RCO}_${RDIR//\//_}_$(date "+%Y%m%d_%H%M%S").zip"
+	    local -r RZIPF="/tmp/${GRABFN}"
+	    local -r LZIPF="${GRABDIR}/${GRABFN}"
+	    local -r RCMD="cd $RDIR && zip  $RZIPF -@"
+	    cat "$FSR" | sed "s/^.*${FZFDLM}//g" | ssh -q "${RCO}" "$RCMD" && scp "${RCO}:$RZIPF" "${LZIPF}" && ssh -q "${RCO}" "rm ${RZIPF}"
+	    echo "Grabbed to --> ${LZIPF}"
+	    zip -z "${LZIPF}" <<<"USED FZF QUERY:${FZFQUERY}"
+	;;
+	erase)
+	    local -r GRABFN="${RCO}_${RDIR//\//_}_ERASED_$(date "+%Y%m%d_%H%M%S").zip"
+	    local -r RZIPF="/tmp/${GRABFN}"
+	    local -r LZIPF="${GRABDIR}/${GRABFN}"
+	    local -r RCMD="cd $RDIR && zip -rm  $RZIPF -@"
+	    cat "$FSR" | sed "s/^.*${FZFDLM}//g" | ssh -q "${RCO}" "$RCMD" && scp "${RCO}:$RZIPF" "${LZIPF}" && ssh -q "${RCO}" "rm ${RZIPF}"
+	    echo "Erased and grabbed to --> ${LZIPF}"
+	    zip -z "${LZIPF}" <<<"USED FZF QUERY:${FZFQUERY}"
+	;;
+	grepmarked)
+            #${TRM} "$myself ${RCO} ${RDIR} @${FSR}" 	    
+            local -r PATFILE=/tmp/${TMPFX}.greppattern
+            echo -n Enter regexp to grep within selected files | rofi -i -dmenu -font "snap 33" -width 61 -p ":">$PATFILE
+	    echo will grep for:
+            cat  $PATFILE
+            [ -s $PATFILE ] || return
+            $myself ${RCO} ${RDIR} @${FSR} @${PATFILE}
+	;;
+	haste)
+	    cat "$FSR" | while read f
+	    do 
+		echo -n "Hastebin page for ["$f"] --> "
+		< /dev/null  ssh -q "${RCO}" "cat $f" | xaste 
+	    done
+	;;
+	esac
+    }
+
+export RUSER=
+if [[ ! -z ${_RCONN} ]] 
+then 
+  # if 1st param specified try to interpret it a [user@]hostname
+  export _RHOST=$(sed 's/^.*@//g'<<<"$_RCONN")
+  echo "${_RCONN}" | grep -q '@' && { 
+     export _RUSER=$(sed 's/@.*$//g'<<<"$_RCONN")
+     [[ ! -z ${_RUSER} ]] && export RUSER="${_RUSER}@"
+  }
+  # prepare fzf query option for matching,
+  # it may be required if hostname is just a part of the host name along known hosts
+  # it may be not required if hostname is a name of a valid host just unknown yet for us
+  export HSELOPT="-1 -q $_RHOST"
+else 
+  : # 1st param is empty
+  export HSELOPT=
+fi 
+
+
+#file to keep known host list, as it'll be used more than once
+KHF=$(mktemp "/tmp/${TMPFX}.XXXX")
+
+
+grep -v '^\s*#.*$' ~/.ssh/known_hosts  |
+ awk ' { print $1 } '  | 
+ sed 's/:[0-9]*//g;s/\[//g;s/\]//g;s/,/\n/g;s/^$//g' | 
+ sort -u > "${KHF}"
+
+# host may be also known by name specified in ssh config
+# when it differs from ssh real host name, it does not get
+# into known_host file, so add those to valid list like this
+grep -i '^Host\s*' .ssh/config |
+  sed 's/^Host[[:space:]]*//'  |
+  sed 's/[[:space:]]/\n/g'     |
+  grep -v '^[[:space:]]*$'     |
+  grep -v '\*' >>$KHF
+# << this scary pipe extracts all hosts from ssh config 
+# and adds them to the list of known hosts
+
+# if host  name is a full name, known to knownwhost, accept it and skip fzfing
+# otherwise use fzf for selection
+# also using non-existant default in case _RHOST still empty to force grep not match it
+if grep -w -q  "^${_RHOST:-EMPTYHOSTNAME}$" "$KHF"
+then 
+  export RHOST=${_RHOST}
+else
+  export RHOST=$(fzf ${HSELOPT,,} --prompt="Enter user@host->" <"$KHF")
+fi 
+ECODE=$?
+
+[[  -z ${RHOST} ]] &&  { echo Selection of host not completed ; exit $ECODE ; }
+[[ $ECODE -gt 0 ]] &&  { echo Selection of host cancelled; exit $ECODE ; }
+##echo $ECODE -------------------
+
+# Remote ssh connection string used globally in subshell and  exported functions
+export RCONN=${RUSER}$RHOST
+
+finish () {
+    echo Wiping out temp files
+    rm /tmp/${TMPFX}*
+    echo Wiping out temp files on remote
+    ssh $RCONN " [ -d $RVIMRP ] && rm -rf $RVIMRP " 
+}
+set -x
+_RREPL=$(ssh -q  "${RCONN:-UNDEFINDED}" pwd 2>&1) || { echo Could not connect to ["$RCONN"], err.msg is "$_RREPL"; exit 2; }
+
+_RDEFDIR=$_RREPL
+
+
+#_RDIR=${2?"No remote dir specified (2nd)"}
+_RDIR=${2:-$_RDEFDIR}
+
+# Remote directory used globally in subshell and  exported functions
+export RDIR=$_RDIR
+echo $RDIR is default remote dir
+#file name pattern
+set +x
+PAR3="$3"
+
+PAR4="$4"
+
+FNAMEGREPFLTR="| grep ."
+FCNTNTGREPFLTR=
+if [ ! -z "$PAR3" ] ; then 
+  if [ ${PAR3:0:1} == '@' ] ; then # explicit list of files passed as @/path/to/file
+    export FPRELIST=${PAR3:1} ; 
+    [ -r $FPRELIST ] || { echo List file unavailable/missed : $FPRELIST; exit 2; }
+    # listfile after copy to remote side to be used as grep patterns for filtering output of the find
+    export RPRELIST=/tmp/ZZ_${thispid}_grep_filename_filter
+    # if list file is passed, copy it to remote now
+    scp $FPRELIST ${RCONN}:${RPRELIST}
+    export FNAMEGREPFLTR="| grep -f $RPRELIST"
+    if [ ! -z "$PAR4" ] ; then 
+      if [ ${PAR4:0:1} == '@' ] ; then # explicit list of files passed as @/path/to/file
+        FCNTNPAT=${PAR4:1} ; 
+        [ -r $FCNTNPAT ] || { echo Grep file content  pattern unavailable/missed : $FCNTNPAT ; exit 2 ; }
+        #  after copy to remote side to be used as content grep pattern for  filtering 
+        export RCNTNTPAT=/tmp/ZZ_${thispid}_grep_content_filter
+        #  copy it to remote now
+        scp $FCNTNPAT ${RCONN}:${RCNTNTPAT}
+        export FCNTNTGREPFLTR="|  grep -f $FCNTNTGREPFLTR"
+      fi 
+    fi
+  else # Pattern passed
+    FPAT="$3"
+    { export FSELOPT="-1 -q $FPAT"; }
+  fi
+fi
+
+#2>/dev/null 
+# export TRM="gnome-terminal --geometry=130x32"
+# export TRM="gnome-terminal "
+export TRM="gnome-terminal "
+# TRM shoudl be a terminal app wrapper expected 1st param as a command
+# since syntax of command param may differ (e.g. -e, -x, --command etc.)
+export TRM="${XJJ_TERM:-jjterm}"
+#export TRM="lxterminal --geometry=130x32"
+# export TRM="t3 --geometry=130x32"
+#TRM=terminator
+FOPT=
+FSELFBASENAME="${0##*/}"
+[[ "${FSELFBASENAME:0:1}" == "d" ]] && FOPT="-type d"
+[[ "${FSELFBASENAME:0:1}" == "f" ]] && FOPT="-type f"
+[[ "${XJJ_FINDEPTH}" ]] && FOPT="$FOPT -maxdepth $XJJ_FINDEPTH"
+
+#RSHEV='export VIMINIT=colorscheme\ torte|set\ timeout\ timeoutlen=1000\ ttimeoutlen=200|set\ <F23>=kj|inoremap\ <F23>\ <C-c><Right>'
+#RSHEV+=';export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=${EDITOR:-vim}'
+#export RSHEV='export VIMINIT=colorscheme\ torte\|set\ timeout\ timeoutlen=1000\ ttimeoutlen\=200\|set\ \<F23\>\=kj\|inoremap\ \<F23\>\ \<C-c\>\<Right\>;export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=${EDITOR:-vim}'
+export RSHEV="export SSHVIMRP=$RVIMRP;export VIMINIT=source\ $RINCVIMINT_SRC;export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=vim"
+####export RSHEV='export VIMINIT=colorscheme\ torte;export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=${EDITOR:-vim}'
+
+
+##VXTODO {} for view in exec cannot handle space in filename - need to figure out the proper escaping for execute of terminal + exec + remote command
+RRC1="ssh -tt $RCONN less "
+RRC2="ssh -tt $RCONN less "
+SELERRLOG="/tmp/${0##*/}.fzfremoteselect.log"
+
+BUFF1=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+
+trimmeta () {
+    local -r FIN=$1
+    local -r FOU=$2
+    cat $FIN | sed "s/^.*${FZFDLM}//g"  > $FOU
+}
+
+hbin_them () {
+  local -r FIN="$1"
+  local -r FTMP=$(t0b)
+  local -r FTMP2=$(t0b)
+  local -r FOUT=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  # trim meta info on the left, all cols till delimiter
+  trimmeta $FIN $FTMP
+  cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
+  #${TRM} "less ${FTMP2}"
+  echo Hasting files ...
+  handle_action "haste" "$RCONN" "$FTMP2" "$RDIR" > ${FOUT}
+  ${TRM} "less ${FOUT}"
+}
+
+ZZZhbin_them () {
+  local -r RDIR="$1"
+  local -r ARG1="$2"
+  local -r BUFF1=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  local -r BUFF2=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  local -r BUFF3=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  echo "$ARG1" > $BUFF3
+  echo ======== >> $BUFF3
+  printf "%s\n" $ARG1 >>$BUFF3
+  ${TRM} "less ${BUFF3}"
+  return
+  #printf "${RDIR}/%s\n" "$ARG1" | sed 's/^\[-.*-\]//g'| sed 's,/./,/,' >${BUFF1} 
+  echo $(printf "${RDIR}/%q\n" "$ARG1") | sed 's/^\[-.*-\]//g'| sed 's,/./,/,' >${BUFF1} 
+  ${TRM} "less ${BUFF1}"
+  echo Hasting files ...
+  handle_action "haste" "$RCONN" "$BUFF1" "$RDIR" > ${BUFF2}
+  ${TRM} "less ${BUFF2}"
+}
+
+xxxedit_emacs () {
+  local -r RDIR="$1"
+  local -r ARG1="$2"
+  local -r BUFF1=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  local -r BUFF2=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  echo RDIR is ["$RDIR"]
+  echo ARG1 is ["$ARG1"]
+  local -r RABSP=$(printf "${RDIR}/%s\n" $ARG1 | sed 's,/\./,/,')
+  ec "/ssh:$RCONN:$RABSP"
+}
+
+edit_vim () {
+  local -r FIN="$1"
+  local -r FTMP=$(t0b)
+  local -r FTMP2=$(t0b)
+  local -r FOUT=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  local RABSP
+  local VID
+  # trim meta info on the left, all cols till delimiter
+  trimmeta $FIN $FTMP
+  cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
+  #${TRM} "less ${FTMP2}"
+  echo Viewing files ...
+  VID=0
+  cat $FTMP2 | while read RABSP
+  do
+      (( VID++ ))
+      export FPANETIT="scp://$RCONN//$RABSP"
+      export FWINDTIT="E${VID}:$(basename $RABSP)"
+      ${TRM}  " vimx \"scp://$RCONN//$RABSP\" -c 'colorscheme torte' -c 'set title' "
+  done
+}
+
+edit_emacs () {
+  local -r FIN="$1"
+  local -r FTMP=$(t0b)
+  local -r FTMP2=$(t0b)
+  local -r FOUT=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  local RABSP
+  # trim meta info on the left, all cols till delimiter
+  trimmeta $FIN $FTMP
+  cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
+  #${TRM} "less ${FTMP2}"
+  echo Viewing files ...
+  cat $FTMP2 | while read RABSP
+  do
+      ec "/ssh:$RCONN:$RABSP"
+  done
+}
+
+
+view_less () {
+  local -r FIN="$1"
+  local -r FTMP=$(t0b)
+  local -r FTMP2=$(t0b)
+  local -r FOUT=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  local RABSP
+  local VID
+  # trim meta info on the left, all cols till delimiter
+  trimmeta $FIN $FTMP
+  cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
+  #${TRM} "less ${FTMP2}"
+  echo Viewing files ...
+  ## pushd $SSHVIMRP && tar zc . -C $(dirname $LSHELL_AUXRC) $(basename $LSHELL_AUXRC)  | ssh $RCONN "mkdir -p $RVIMRP ; tar zxf - -C $RVIMRP " ; popd
+  VID=0
+  cat $FTMP2 | while read RABSP
+  do
+      (( VID++ ))
+      export FPANETIT="scp://$RCONN//$RABSP"
+      export FWINDTIT="V${VID}:$(basename $RABSP)"
+      ${TRM}  "ssh -q -tt $RCONN \" $RSHEV;  { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }; less $RABSP || { echo Please read above, there must be some error msg ;read K; } \" "
+  done
+}
+
+sel2clipboard () {
+  local -r FIN="$1"
+  local -r FTMP=$(t0b)
+  local -r FTMP2=$(t0b)
+  local -r FOUT=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  local RABSP
+  # # trim meta info on the left, all cols till delimiter
+  trimmeta $FIN $FTMP
+  cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
+  cat $FTMP2 | sed "s,^,${RCONN}:," |xsel -b -i  
+  cat $FTMP2 | xsel -p -i 
+}
+
+xxxview_less () {
+  local -r RDIR="$1"
+  local -r ARG1="$2"
+  local -r BUFF1=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  local -r BUFF2=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  echo RDIR is ["$RDIR"]
+  echo ARG1 is ["$ARG1"]
+  local -r RABSP=$(printf "${RDIR}/%s\n" $ARG1 | sed 's,/\./,/,')
+  ${TRM}  "ssh -tt $RCONN \" $RSHEV; less $RABSP \" "
+}
+
+stat_them () {
+  local -r FIN="$1"
+  local -r FTMP=$(t0b)
+  local -r FTMP2=$(t0b)
+  local -r FOUT=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  local RABSP
+  # trim meta info on the left, all cols till delimiter
+  trimmeta $FIN $FTMP
+  cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
+  #${TRM} "less ${FTMP2}"
+  echo Stating files ...
+  cat $FTMP2 | while read RABSP
+  do
+      < /dev/null ssh -q $RCONN "md5sum $RABSP && echo '========================' ;  ls -lha $RABSP --time-style=+'%Y%m%d_%H%M' &&  echo ======================== ;  stat $RABSP " >> ${FOUT}
+  done
+  
+  ${TRM} "less ${FOUT}"
+}
+XXXstat_them () {
+  local -r RDIR="$1"
+  local -r ARG1="$2"
+  local -r BUFF1=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  local -r BUFF2=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  echo RDIR is ["$RDIR"]
+  echo ARG1 is ["$ARG1"]
+  local -r RABSP=$(printf "${RDIR}/%s\n" $ARG1 | sed 's,/\./,/,')
+  ssh -q $RCONN "md5sum $RABSP && echo '========================' ;  ls -lha $RABSP --time-style=+'%Y%m%d_%H%M' &&  echo ======================== ;  stat $RABSP " > ${BUFF2}
+  ${TRM} "less ${BUFF2}"
+}
+
+    
+grab_them () {
+  set -x
+  echo Grabbing selected ...
+  local -r FIN="$1"
+  local -r FTMP=$(t0b)
+  local -r FTMP2=$(t0b)
+  local -r FOUT=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  # trim meta info on the left, all cols till delimiter
+  trimmeta $FIN $FTMP
+  #cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
+  #${TRM} "less ${FTMP2}"
+  echo Grabbing files ...
+  # Sensible filename for zip file
+  local -r GRABFN="${RCONN}_${RDIR//\//_}_$(date "+%Y%m%d_%H%M%S").zip"
+  local -r RZIPF="/tmp/${GRABFN}"
+  local -r LZIPF="${GRABDIR}/${GRABFN}"
+  local -r RCMD="cd $RDIR && zip  $RZIPF -@"
+  # list is feed to the zip on remote host 
+  cat "$FTMP" | ssh -q ${RCONN} "$RCMD" && scp "${RCONN}:$RZIPF" $LZIPF
+  zip -z "${LZIPF}" <<<"USED FZF QUERY:${FZFQUERY}"
+  echo "Grabbed to --> ${LZIPF}" >$FOUT
+  echo "===================================" >>$FOUT
+  unzip -l ${LZIPF} >>$FOUT
+
+  ${TRM} "less ${FOUT}"
+}
+
+act_menu () {
+  local -r sfun=$(echo -e "view_less\ngrab_them\nstat_them\nhbin_them\nedit_emacs" | rofi -dmenu -p 'Action:' -i -font "snap 33"  -width 25)
+  ${sfun} "$@"
+}
+
+tst_them () {
+    local -r BUF=$1
+  local -r BUFF2=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  cat $BUF | sed "s/^.*${FZFDLM}//g" > $BUFF2  
+  ${TRM} "less ${BUFF2}"
+}
+
+tst_them () {
+    local -r BUF=$1
+  local -r BUFF2=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  cat $BUF | sed "s/^.*${FZFDLM}//g" > $BUFF2  
+  ${TRM} "less ${BUFF2}"
+}
+ts2_them () {
+  local -r BUFF1=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  local -r BUFF2=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  printf \"%s\n\" $@ >$BUFF2
+#  cat $BUF | sed "s/^.*${FZFDLM}//g" > $BUFF2  
+  ${TRM} "less ${BUFF2}"
+}
+
+callshell () {
+  local -r RF=${RDIR%/}/$(echo "$1" | sed  "s/^.*${FZFDLM}//g;s,^./,,g")
+  echo Remotefile ot run shell around: $RF
+  ### scp -q $LINCVIMINT_SRC $RCONN:$RINCVIMINT_SRC
+  ## pushd $SSHVIMRP && tar zc . -C $(dirname $LSHELL_AUXRC) $(basename $LSHELL_AUXRC)  | ssh $RCONN "mkdir -p $RVIMRP ; tar zxf - -C $RVIMRP " ; popd
+  #${TRM} "ssh -t ${RCONN} $RSHEV ; cd \$(dirname ${RF}) ; exec \${SHELL} "
+  ${TRM} "ssh -q -tt ${RCONN} \" $RSHEV ; cd \$(dirname ${RF}) ; { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }; \${SHELL}  \" "
+}
+
+callRCshell () {
+  local -r RF=${RDIR%/}/$(echo "$1" | sed  "s/^.*${FZFDLM}//g;s,^./,,g")
+  echo Remotefile ot run shell around: $RF
+  ${TRM} "sshrc -t ${RCONN} cd \$(dirname ${RF}) "
+}
+t0b () {
+    # returns filename of a dynamically created tmp file
+    # 
+    echo $(mktemp "/tmp/${TMPFX}.XXXXXX")
+}
+
+callvifm () {
+  local -r RF=${RDIR%/}/$(echo "$1" | sed  "s/^.*${FZFDLM}//g;s,^./,,g")
+  local -r MEANINGNAME=$(echo "${RCONN}:$(dirname ${RF})/"  | tr "/@:" "___")
+  local -r TMPSSHF=$(mktemp "/tmp/${TMPFX}.XXX.${MEANINGNAME}.ssh")
+  echo "${RCONN}:$(dirname ${RF})/">$TMPSSHF
+  ${TRM} "vfm $TMPSSHF"
+}
+
+t0b () {
+    # returns filename of a dynamically created tmp file
+    # 
+    echo $(mktemp "/tmp/${TMPFX}.XXXXXX")
+}
+
+
+export -f  hbin_them handle_action xaste stat_them grab_them dpf act_menu \
+           edit_vim edit_emacs view_less tst_them ts2_them t0b trimmeta callshell callRCshell callvifm sel2clipboard
+
+
+RFINDCMD="find $RDIR"
+RFINDCMD="cd $RDIR && find -L ${FOPT} -printf '%TY-%Tm-%Td %TI:%TM %m %10s ${FZFDLM}%p\n'"
+#RFINDCMD="cd $RDIR && find"
+BUFF20=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+
+# reusable primariy buffer, used fzf output in execute[-mulit]
+PRIMB=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+export PRIMB
+echo $PRIMB
+
+
+
+
+FSELLINES=$(t0b)
+#ssh -q "$RCONN" "$RFINDCMD  -iregex \"^.*${FPAT}.*$\" " 2>"${SELERRLOG}" |
+
+export PATPART=
+[ ! -z "$FPAT" ] && export PATPART=" -iregex \"^.*${FPAT}.*$\""
+if [ -z "$FCNTNPAT" ] ; then
+   RFINDCMD="cd $RDIR && find -L ${FOPT} $PATPART -printf '%TY-%Tm-%Td %TI:%TM %m %10s ${FZFDLM}%p\n' $FNAMEGREPFLTR"
+else
+   RFINDCMD="cd $RDIR && find -L ${FOPT} $PATPART $FNAMEGREPFLTR | while read f; do grep -f $RCNTNTPAT -l \$f; done "
+   GREPPEDLIST=/tmp/${TMPFX}.grepped_by_content
+   ssh -q "$RCONN" $RFINDCMD >"${GREPPEDLIST}"
+   $myself ${RCONN} ${RDIR} @${GREPPEDLIST}
+   exit 
+fi
+
+#RBLDLISTCMD="$RFINDCMD $PATPART $FNAMEGREPFLTR " 
+#echo ssh -q "$RCONN" $RBLDLISTCMD 
+echo Preparing remote environment ... 
+set -x
+pushd $SSHVIMRP && tar zc . -C $(dirname $LSHELL_AUXRC) $(basename $LSHELL_AUXRC)  | ssh $RCONN "mkdir -p $RVIMRP ; tar zxf - -C $RVIMRP " ; popd
+echo Done
+
+# trap to cleanup all temp files with our prefix on exit
+trap finish  exit
+set -x
+ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR | 
+         fzf -m  \
+	 --color=dark \
+	 --print-query \
+	 --header="view:f3 edit:f4 zgrab:f5 stat:f6 hbin:f7 shell:M-n " \
+	 --prompt="${RCONN}[${RDIR}]>" \
+	 --expect="alt-h,f8,f9,alt-g" \
+	 --nth=-1 \
+	 --bind "alt-s:select-all" \
+	 --bind "alt-d:deselect-all" \
+	 --bind "alt-j:jump" \
+	 --bind "f2:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; act_menu $PRIMB )" \
+	 --bind "alt-space:execute-multi(printf \"%s\n\" {}>$PRIMB  ; act_menu $PRIMB )" \
+	 --bind "f3:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; view_less $PRIMB )" \
+	 --bind "f6:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; stat_them $PRIMB )" \
+	 --bind "f7:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; hbin_them $PRIMB )" \
+	 --bind "f5:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; grab_them $PRIMB )" \
+	 --bind "alt-e:execute-multi(    printf \"%s\n\" {}>$PRIMB  ; edit_emacs $PRIMB )" \
+	 --bind "f4:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; edit_vim $PRIMB )" \
+	 --bind "alt-i:execute-multi(    printf \"%s\n\" {}>$PRIMB  ; sel2clipboard $PRIMB )" \
+	 --bind "alt-n:execute(callRCshell {})" \
+	 --bind "alt-f:execute(callvifm {})" \
+	 --bind "enter:execute(callshell {})" \
+	 --bind "alt-a:execute(ec \"/ssh:${RCONN}|sudo:${RHOST}:$RDIR/{}\")" \
+	 --bind "alt-m:execute(callshell {})"  >"$FSELLINES"  # all selected lines including metainfo on the left
+ECODE=$?
+
+[[ $ECODE -gt 0 ]] &&  { echo Selection of remote file cancelled exit with code ["$ECODE"]; exit $ECODE ; }
+#dpf $FSELLINES
+
+FSFN=$(t0b)
+
+sed "s/^.*${FZFDLM}//g" "${FSELLINES}" > "$FSFN" # seclected paths w/o meta info
+
+# first line of otucome is the  query, if --print-query is used
+# second  line of otucome is the name of pressed key (or empty line if default)
+
+export FZFQUERY=$(head -1 "$FSELLINES") 
+KEYPR=$(sed -n '2p' "$FSELLINES" ) 
+
+FPAYLOAD=$(t0b)
+
+sed '1,2d' "$FSFN"  >"$FPAYLOAD"
+
+case $KEYPR in
+    alt-h) OACT=haste
+	   ;;
+       f8) OACT=erase
+	   ;;
+    alt-g) OACT=grepmarked
+	   ;;
+       f9) OACT=grab
+	   ;;
+esac
+# redfining outcome after filtering expected keys out
+SFN="$PLOAD"
+NOFL=$(wc -l  "$FPAYLOAD")
+NOFW=$(wc -w  "$FPAYLOAD")
+
+[[ "$NOFL" -lt "$NOFW" ]] && { echo "WARNING: FILE NAME(S) SEEM TO CONTAIN SPACES!" ; exit 1; }
+
+handle_action "${OACT:-none}" "$RCONN" "$FPAYLOAD" "$RDIR"
+

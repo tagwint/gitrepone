@@ -1,0 +1,18 @@
+#!/bin/bash
+set -x
+TRM="terminator --command="
+TRM="tmux new-window "
+#TRM="lxterminal $GEOS --command="
+#TRM="roxterm $GEOP -e "
+LOG=/tmp/jjtermt.log
+echo "$(date) PID:$$" >>$LOG
+
+export TPFX=
+export TWIN=
+[ -z "$TMUX" ] || {
+   [ -z "$FPANETIT" ] || export TPFX="tmux set pane-border-format \"#T\" ; printf '\033]2;'""${FPANETIT// /_}""'\033\\' ; "
+   [ -z "$FWINDTIT" ] || export TWIN="tmux rename-window $FWINDTIT ;"
+}
+
+${TRM}"${TWIN}${TPFX}""$@" >>$LOG 2>&1 &
+
