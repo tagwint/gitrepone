@@ -21,7 +21,7 @@ else
   tmux select-pane -t "$SP"
   if [ -z "${TMUX}" ] 
   then 
-    tmux a -t  "$SP" 
+    tmux a -d -t  "$SP" 
   else 
     tmux switch-client -t "$SP" 
   fi
