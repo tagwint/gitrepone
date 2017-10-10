@@ -28,5 +28,10 @@ TITLE=$(echo ${TITLE//(/\\(})
 TITLE=$(echo ${TITLE//)/\\)})
 TITLE=$(echo ${TITLE// /\\ })
 TITLE=$(echo ${TITLE//-/\\-})
-/usr/bin/vimdiff -c "set title titlestring=$TITLE" ${7} ${6}
+if [ "$TMUX" ] 
+then 
+  tmux new-window -n  "svndiff"  /usr/bin/vimdiff -c "set title titlestring=$TITLE" ${7} ${6}
+else 
+  /usr/bin/vimdiff -c "set title titlestring=$TITLE" ${7} ${6}
+fi
 
