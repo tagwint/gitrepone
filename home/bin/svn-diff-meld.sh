@@ -7,10 +7,10 @@
 # version=$(meld --version | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/' )    
 echo '@' Parameters passed to merge-tool: "$@"
 echo '*' Parameters passed to merge-tool: "$*"
-LLabel=${3}
-RLabel=${5}
-LFile=${6}
-RFile=${7}
+LLabel=${5}
+RLabel=${3}
+LFile=${7}
+RFile=${6}
 # version=$(meld --version | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/' )    
 
 # echo base is ____ $base 
@@ -21,5 +21,26 @@ RFile=${7}
 # echo ---------------
 # echo "$@"
 # echo ---------------
-meld --label="$LLabel"    "$LFile"   \
-     --label="$RLabel"    "$RFile"   
+
+if [ ! "$SSH_CONNECTION" ]
+then 
+	meld --label="$LLabel"    "$LFile"   \
+	     --label="$RLabel"    "$RFile"   
+else
+	TITLE="${LLabel} - ${RLabel}"
+	TITLE=$(echo ${TITLE//(/\\(})
+	TITLE=$(echo ${TITLE//)/\\)})
+	TITLE=$(echo ${TITLE// /\\ })
+	TITLE=$(echo ${TITLE//-/\\-})
+
+	if [ "$TMUX" ] 
+	then 
+	  # TODO in a new window ?
+	  # tmux new-window -n  "svndiff"  /usr/bin/vimdiff -c "set title titlestring=$TITLE" ${7} ${6}
+	  # <<< this works well for diff working copy, but fails in comparing revisions like r17:14
+	  # apparently wiping out tmp files before they get into vimdiff
+	  /usr/bin/vimdiff -c "set title titlestring=$TITLE" ${LFile} ${RFile}
+	else 
+	  /usr/bin/vimdiff -c "set title titlestring=$TITLE" ${LFile} ${RFile}
+	fi
+fi
