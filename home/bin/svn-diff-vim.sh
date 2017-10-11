@@ -28,9 +28,14 @@ TITLE=$(echo ${TITLE//(/\\(})
 TITLE=$(echo ${TITLE//)/\\)})
 TITLE=$(echo ${TITLE// /\\ })
 TITLE=$(echo ${TITLE//-/\\-})
+
 if [ "$TMUX" ] 
 then 
-  tmux new-window -n  "svndiff"  /usr/bin/vimdiff -c "set title titlestring=$TITLE" ${7} ${6}
+  # TODO in a new window ?
+  # tmux new-window -n  "svndiff"  /usr/bin/vimdiff -c "set title titlestring=$TITLE" ${7} ${6}
+  # <<< this works well for diff working copy, but fails in comparing revisions like r17:14
+  # apparently wiping out tmp files before they get into vimdiff
+  /usr/bin/vimdiff -c "set title titlestring=$TITLE" ${7} ${6}
 else 
   /usr/bin/vimdiff -c "set title titlestring=$TITLE" ${7} ${6}
 fi
