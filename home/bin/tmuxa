@@ -15,7 +15,7 @@ else
     HSELOPT=
   fi
 
-  SLINE=$(tmux list-panes -aF "#S:#I.#P #T #W S:#{pane_start_command} C:#{pane_current_command} #{pane_pid}" |   fzf $HSELOPT)
+  SLINE=$(tmux list-panes -aF "#S:#I.#P 🗔 #W 🖽 #T  ⩥ #{pane_start_command} ⩥ #{pane_current_command} ###{pane_pid} " | column -t |  fzf $HSELOPT)
   [ "$?" -gt 0 ] && exit 
   SP=$(awk ' { print $1 } ' <<<"$SLINE")
   tmux select-pane -t "$SP"
