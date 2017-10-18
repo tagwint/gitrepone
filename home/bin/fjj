@@ -364,15 +364,27 @@ view_less () {
 
 sel2clipboard () {
   local -r FIN="$1"
+  local -r FMT="${2:-0}"
+  # valid formats:
+  # 0 - just full path 
+  # 1 - {scp,rsync}-able (username@hostname:<fullpath>)
+  # 2 - {vim-scp}-able (scp://username@hostname//<fullpath>)
   local -r FTMP=$(t0b)
   local -r FTMP2=$(t0b)
-  local -r FOUT=$(mktemp "/tmp/${TMPFX}.XXXXXX")
-  local RABSP
   # # trim meta info on the left, all cols till delimiter
   trimmeta $FIN $FTMP
-  cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
+
+  cat $FTMP | sed "s,^./\(.*\)$,${RDIR}\1,g"  > $FTMP2
   cat $FTMP2 | sed "s,^,${RCONN}:," |xsel -b -i  
-  cat $FTMP2 | xsel -p -i 
+
+  case $FMT in
+      0) cat $FTMP2 | xsel -p -i 
+	   ;;
+      1) cat $FTMP2 | sed "s,^,${RCONN}:," |xsel -p -i  
+	   ;;
+      2) cat $FTMP2 | sed "s,^,scp://${RCONN}/," |xsel -p -i  
+	   ;;
+  esac
 }
 
 xxxview_less () {
@@ -554,7 +566,7 @@ ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR |
          fzf -m  \
 	 --color=dark \
 	 --print-query \
-	 --header="view:f3 edit:f4 zgrab:f5 stat:f6 hbin:f7 shell:M-n " \
+	 --header="view:f3 edit:f4 zgrab:f5 stat:f6 hbin:f7 shell:M-m cp2clip:M-(i|r|v)" \
 	 --prompt="${RCONN}[${RDIR}]>" \
 	 --expect="alt-h,f8,f9,alt-g" \
 	 --nth=-1 \
@@ -569,7 +581,9 @@ ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR |
 	 --bind "f5:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; grab_them $PRIMB )" \
 	 --bind "alt-e:execute-multi(    printf \"%s\n\" {}>$PRIMB  ; edit_emacs $PRIMB )" \
 	 --bind "f4:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; edit_vim $PRIMB )" \
-	 --bind "alt-i:execute-multi(    printf \"%s\n\" {}>$PRIMB  ; sel2clipboard $PRIMB )" \
+	 --bind "alt-i:execute-multi(    printf \"%s\n\" {}>$PRIMB  ; sel2clipboard $PRIMB 0 )" \
+	 --bind "alt-r:execute-multi(    printf \"%s\n\" {}>$PRIMB  ; sel2clipboard $PRIMB 1 )" \
+	 --bind "alt-v:execute-multi(    printf \"%s\n\" {}>$PRIMB  ; sel2clipboard $PRIMB 2 )" \
 	 --bind "alt-n:execute(callRCshell {})" \
 	 --bind "alt-f:execute(callvifm {})" \
 	 --bind "enter:execute(callshell {})" \
