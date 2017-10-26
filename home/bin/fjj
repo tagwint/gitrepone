@@ -175,7 +175,7 @@ _RDEFDIR=$_RREPL
 _RDIR=${2:-$_RDEFDIR}
 
 # Remote directory used globally in subshell and  exported functions
-export RDIR=$_RDIR
+export RDIR=${_RDIR%/}/   # ensure trailing slash is there
 echo $RDIR is default remote dir
 #file name pattern
 set +x
