@@ -1,6 +1,6 @@
 #!/bin/bash
 #Fuzzy select of remote file/dir
-set -x
+#set -x
 #_RCONN=${1?"No remote [user@]host specified (1st)"}
 _RCONN=${1}
 
@@ -65,7 +65,7 @@ handle_action () {
 	fi
 	;;
 	grab)
-            set -x
+            #set -x
 	    local -r GRABFN="${RCO}_${RDIR//\//_}_$(date "+%Y%m%d_%H%M%S").zip"
 	    local -r RZIPF="/tmp/${GRABFN}"
 	    local -r LZIPF="${GRABDIR}/${GRABFN}"
@@ -165,7 +165,7 @@ finish () {
     echo Wiping out temp files on remote
     ssh $RCONN " [ -d $RVIMRP ] && rm -rf $RVIMRP " 
 }
-set -x
+#set -x
 _RREPL=$(ssh -q  "${RCONN:-UNDEFINDED}" pwd 2>&1) || { echo Could not connect to ["$RCONN"], err.msg is "$_RREPL"; exit 2; }
 
 _RDEFDIR=$_RREPL
@@ -430,7 +430,7 @@ XXXstat_them () {
 
     
 grab_them () {
-  set -x
+  #set -x
   echo Grabbing selected ...
   local -r FIN="$1"
   local -r FTMP=$(t0b)
@@ -509,8 +509,11 @@ callvifm () {
   local -r RF=${RDIR%/}/$(echo "$1" | sed  "s/^.*${FZFDLM}//g;s,^./,,g")
   local -r MEANINGNAME=$(echo "${RCONN}:$(dirname ${RF})/"  | tr "/@:" "___")
   local -r TMPSSHF=$(mktemp "/tmp/${TMPFX}.XXX.${MEANINGNAME}.ssh")
+  local LTERM
   echo "${RCONN}:$(dirname ${RF})/">$TMPSSHF
-  ${TRM} "vfm $TMPSSHF"
+  LTERM=$TRM
+  [ "$TMUX" ] && LTERM=$TTERM
+  ${LTERM} "vfm $TMPSSHF"
 }
 
 t0b () {
@@ -555,18 +558,18 @@ fi
 #RBLDLISTCMD="$RFINDCMD $PATPART $FNAMEGREPFLTR " 
 #echo ssh -q "$RCONN" $RBLDLISTCMD 
 echo Preparing remote environment ... 
-set -x
+#set -x
 pushd $SSHVIMRP && tar zc . -C $(dirname $LSHELL_AUXRC) $(basename $LSHELL_AUXRC)  | ssh $RCONN "mkdir -p $RVIMRP ; tar zxf - -C $RVIMRP " ; popd
 echo Done
 
 # trap to cleanup all temp files with our prefix on exit
 trap finish  exit
-set -x
+#set -x
 ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR | 
          fzf -m  \
 	 --color=dark \
 	 --print-query \
-	 --header="view:f3 edit:f4 zgrab:f5 stat:f6 hbin:f7 shell:M-m cp2clip:M-(i|r|v)" \
+	 --header="view:f3 edit:f4 zgrab:f5 stat:f6 hbin:f7 vfm:alt-f shell:M-m cp2clip:M-(i|r|v)" \
 	 --prompt="${RCONN}[${RDIR}]>" \
 	 --expect="alt-h,f8,f9,alt-g" \
 	 --nth=-1 \
