@@ -1,0 +1,3 @@
+#!/bin/bash
+NEXTLO=$(printf "ua\nde\nes\ncz\ru\nen"| rofi -i -dmenu -font "snap 33" -fg "#845454" -bg "#2e2e2e" -hlfg "#ffb964" -hlbg "#000100" -width 11 -p "Layout")
+

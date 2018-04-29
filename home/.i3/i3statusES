@@ -1,0 +1,69 @@
+#!/bin/sh
+
+echo '{ "version": 1 }'
+
+echo '['
+
+echo '[],'
+
+readonly PRE='{ "full_text": "'
+readonly COL='", "color": "'
+readonly CER='" }'
+
+#KERNELV=$PRE"K: $(uname -sr)"$COL'#bbaacc'$CER
+
+i=5
+upd () {
+   local DUM=${1:-}
+#   BATERIA=$PRE"B: $(acpi -b | awk '{print $NF}')"$COL'#ccbbaa'$CER
+#   DISK=$PRE"D: $(df -h | awk '/sda1/ {print $5 " ("$4" Disp.)" }')"$COL'#ccaabb'$CER
+   UPTIME=$PRE"🕐 $(awk  '{printf "%.2f", $0/3600;}' /proc/uptime)h"$COL'#ccaabb'$CER
+   
+#   CALOR=$PRE"T: $(acpi -t | awk '{print $(NF-2)}')°C"$COL'#ccbbaa'$CER
+   
+   LOAD=$PRE"  $(cat /proc/loadavg)"$COL'#ccbbaa'$CER
+   VOL=$PRE"🔉$(amixer get Master| grep %| sed 's/^.*\[\([0-9]*%\).*$/\1/;1q')"$COL'#efff33'$CER
+   FECHA=$PRE"$(date +'%H:%M %a, %b %d')"$COL'#eeff24'$CER
+   # term radio mets
+   MPVPLAYING_NL_CAN_OCCUR=$(pactl list sink-inputs  | sed '1,/"mpv"/d' | grep 'media.name' | sed 's/^.*name = //;1q' | tr -d '"\')
+   MPVPLAYING=$(echo  "$MPVPLAYING_NL_CAN_OCCUR")
+   MTIT=${MPVPLAYING:-'NoTRMPV'}
+   ps aux| grep -q -s 'title [T]erminalRadio' && {
+      MNAME=$(egrep 'ICY-NAME|Name...:' $HOME/bin/vx/.data/mplayed.log  | tail -1|sed 's/^.*ICY-NAME:\(.*\)/\1/g;s/^.*Name...://g'|tr -d \') 
+      STREAMTIT=$(tail -1 $HOME/bin/vx/.data/mplayed.log  | grep StreamTitle| sed 's/^.*StreamTitle=\([^;]*\).*$/\1/g'|  tr \' \# )
+      [ ${#STREAMTIT} -gt 42 ] && STREAMTIT="${STREAMTIT:0:42}..."
+      [ ${#MNAME} -gt 22 ] && MNAME="${MNAME:0:22}..."
+      MTIT="♪ ${STREAMTIT} 📻${MNAME} "
+    }
+
+    MUSTIT=$PRE"${MTIT}"$COL'#ffcc99'$CER
+
+   #cmus
+   CmusMTIT='NoCmus'
+   cmus-remote -Q >/dev/null && {
+     CmusMNAME=$(egrep ' tag title' $HOME/.config/cmus/laststatus  | tail -1|sed 's/^.* tag title \(.*\)/\1/g' | tr -d \') 
+     CmusSTREAMTIT=$(tail -1 $HOME/.config/cmus/laststatus  | grep ' stream'| sed 's/^.* stream\([^;]*\).*$/\1/g'|  tr \' \#|  tr \" \#  )
+     [ ${#CmusSTREAMTIT} -gt 42 ] && CmusSTREAMTIT="${CmusSTREAMTIT:0:42}..."
+     [ ${#CmusMNAME} -gt 22 ] && CmusMNAME="${CmusMNAME:0:22}..."
+     CmusMTIT="♪ ${CmusSTREAMTIT} 📻${CmusMNAME} "
+   }
+   CmusMUSTIT=$PRE"${CmusMTIT}"$COL'#ffcc99'$CER
+
+
+   LG=$PRE"  $(setxkbmap -query | awk '/layout/{print $2}'|tr 'a-z' 'A-Z')"$COL'#229922'$CER
+   echo "[$LG,${MUSTIT},${CmusMUSTIT},$UPTIME,$VOL,$LOAD,$FECHA]," || exit 1
+}
+
+
+SELFPID=~/.i3/`basename $0`.pid
+echo $$>$SELFPID
+
+trap 'upd AAA' SIGUSR1
+trap 'rm $SELFPID' EXIT
+
+while :
+do
+   upd 
+   sleep 7s &
+   wait
+done

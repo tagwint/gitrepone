@@ -1,0 +1,38 @@
+#!/bin/bash
+#set -x
+DefCLO=$(setxkbmap -query|awk '/lay/ { print $2 }')
+DefNLO=us
+
+CLO=$DefCLO
+
+ForcedNLO=${1}
+
+BGC=\#00aaaa
+
+if [[ -z  "$ForcedNLO"  ]] 
+then
+ echo Forced is NOT set
+ NLO=$DefNLO
+ BGC=\#22aaff
+
+ [[ "$CLO" == "us" ]] && { NLO=ru ; BGC=\#00aa00; }
+ [[ "$CLO" == "ru" ]] && { NLO=us ; BGC=\#00aaff; }
+else
+ echo Forced is set [$ForcedNLO]
+ NLO=$ForcedNLO
+ BGC=\#2e2e2e
+fi
+
+#notify-send "PPID of toggle $RANDOM" ${PPID}
+setxkbmap $NLO
+IND=${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.\
+${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}.${NLO}
+
+echo ${IND^^}====${IND^^}|dzen2 -p 1  -y 50 -bg ${BGC} -fg \#845454 -fn "Sans:size=35" &
+BPID=$!
+## notify-send ${NLO^^}
+sleep 0.15
+
+~/.i3/i3_force_upd_layout
+~/.i3/i3_force_upd_status
+kill $BPID

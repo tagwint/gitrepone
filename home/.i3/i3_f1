@@ -1,0 +1,24 @@
+#!/bin/bash
+nfy ()
+{
+  local lM=${1:-"Empty message"}
+  echo $lM
+  notify-send "$lM" "Notify" -t 4000
+}
+
+WTIT='rdesktop - localhost:33389/ieuser'
+EW=$(xdotool search --limit 1  --name "$WTIT")
+TRYW=$(cat /tmp/lsw )
+LASTSHOWNW=${TRYW:-0}
+CURW=$(xdotool getwindowfocus)
+if  [[ ! -z $EW ]] ; then
+  if [[ ! $CURW -eq $EW ]] ; then
+   xdotool windowactivate --sync  $EW;         echo $CURW >/tmp/lsw;  exit 
+  else
+   xdotool windowactivate --sync  $LASTSHOWNW; echo $CURW >/tmp/lsw;  exit 
+  fi   
+fi 
+nfy "No window with title  $WTIT found";
+
+
+

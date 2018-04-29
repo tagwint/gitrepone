@@ -1,0 +1,15 @@
+#!/bin/bash
+nfy ()
+{
+  local lM=${1:-"Empty message"}
+  echo $lM
+  notify-send "$lM" "Notify" -t 4000
+}
+
+WTIT='Zimbra.*'
+EW=$(xdotool search --name "$WTIT")
+[[ ! -z $EW ]] && { xdotool windowactivate --sync  $EW;  nfy "Existed $WTIT activated"; exit ; }
+nfy "No window with title  $WTIT found";
+
+
+

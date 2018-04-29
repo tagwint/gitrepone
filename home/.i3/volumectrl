@@ -1,0 +1,6 @@
+#!/bin/bash
+FUPD=~/.i3/i3_force_upd_status
+VBY=${1:-'5%+'}
+amixer -D pulse sset Master $VBY
+$FUPD
+

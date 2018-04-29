@@ -1,0 +1,3 @@
+#!/bin/bash
+setxkbmap us
+rofi -show run  -lines  7   -font "snap 35" -config ~/.i3/rofi.conf

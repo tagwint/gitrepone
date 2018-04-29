@@ -1,0 +1,3 @@
+#!/bin/bash
+setxkbmap us
+~/.i3/i3-container-commander.py --menu=rofi

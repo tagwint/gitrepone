@@ -1,0 +1,10 @@
+#!/bin/bash
+GAP=1.5
+for i in `seq 10`
+do
+ i3-msg workspace next_on_output
+ sleep $GAP
+ i3-msg workspace prev_on_output
+ sleep $GAP
+done
+
