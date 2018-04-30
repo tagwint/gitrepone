@@ -45,6 +45,7 @@ set $nm_7   16
 set $nm_8   17
 set $nm_9   18
 set $nm_0   19
+set $Tab_code 23
 set $q_code 24
 set $w_code 25
 set $e_code 26
@@ -55,6 +56,9 @@ set $u_code 30
 set $i_code 31
 set $o_code 32
 set $p_code 33
+set $lsqbrk_code 34
+set $rsqprk_code 35
+set $enter_code 36
 set $a_code 38
 set $s_code 39
 set $d_code 40
@@ -173,7 +177,9 @@ bindcode Control+$mod+$d_code  exec --no-startup-id ~/.i3/i3_runprog
 bindcode Mod1+$mod+$semicolon  exec --no-startup-id ~/.i3/i3_runprog
 bindcode $mod+$u_code      exec --no-startup-id ~/.i3/i3_selectwin
 bindcode Mod1+$mod+$u_code exec --no-startup-id ~/.i3/i3_selectwin2
+bindcode Mod1+$mod+$l_code exec --no-startup-id ~/.i3/i3_selectwin2
 bindcode Mod1+$mod+$t_code exec --no-startup-id ~/.i3/i3_selectterm
+bindcode Mod1+$mod+$enter_code exec --no-startup-id ~/.i3/i3_selectterm
 bindcode $mod+$yo_code exec --no-startup-id ~/.i3/i3_selectwin2
 
 
@@ -476,6 +482,7 @@ assign [class="^Firefox$"]                  → 2 $ws2
 assign [class="^Skype$"]                    → 3 $ws3 
 assign [title="^.*Google Chrome$"]          → 7 $ws7
 assign [title="TerminalRadio$"]             → 0 $ws0
+assign [class="xfreerdp"]                   → 8 $ws8
 assign [class=".erminator$"]                → 1 $ws1
 assign [class="zoom"]                       → 6 $ws6
 assign [class="Viber.*"]                    → 9 $ws9

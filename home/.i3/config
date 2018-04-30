@@ -45,6 +45,7 @@ set $nm_7   16
 set $nm_8   17
 set $nm_9   18
 set $nm_0   19
+set $Tab_code 23
 set $q_code 24
 set $w_code 25
 set $e_code 26
@@ -55,6 +56,9 @@ set $u_code 30
 set $i_code 31
 set $o_code 32
 set $p_code 33
+set $lsqbrk_code 34
+set $rsqprk_code 35
+set $enter_code 36
 set $a_code 38
 set $s_code 39
 set $d_code 40
@@ -113,12 +117,18 @@ exec --no-startup-id clipit
 focus_follows_mouse no
 
 ## Conditionally inserted part, replaced at startup, before starting i3
-##### SPECIFIC for uadnvkh7 inserted on Sun Apr 29 19:53:38 CEST 2018 @@@
-# BEGIN OF  HOST-SPECIFIC INCLUSION
-exec --no-startup-id feh --bg-tile  ~/Pictures/WallPapers/03_Abstract.jpg 
-## no need anymore ## exec --no-startup-id ~/bin/skypemic 
-### FRESH NNL kh7
-# END OF HOST-SPECIFIC INCLUSION
+##### SPECIFIC for bay5 inserted on Sun Apr 29 19:45:27 CEST 2018 @@@
+### BEGIN OF DYNAMIC HOST-SPECIFIC INCLUSION 
+exec_always --no-startup-id ~/.i3display
+
+for_window [class=".kype-bin$"] exec --no-startu-id ~/.i3/toggle_layout 
+
+exec --no-startup-id xsetroot -solid "#333333"
+exec --no-startup-id nm-applet
+### FRESH BAY5
+### END OF DYNAMIC INCLUSION
+############################################################
+
 
 
 ###### vxadd: keyboard layot switch
@@ -178,7 +188,9 @@ bindcode Control+$mod+$d_code  exec --no-startup-id ~/.i3/i3_runprog
 bindcode Mod1+$mod+$semicolon  exec --no-startup-id ~/.i3/i3_runprog
 bindcode $mod+$u_code      exec --no-startup-id ~/.i3/i3_selectwin
 bindcode Mod1+$mod+$u_code exec --no-startup-id ~/.i3/i3_selectwin2
+bindcode Mod1+$mod+$l_code exec --no-startup-id ~/.i3/i3_selectwin2
 bindcode Mod1+$mod+$t_code exec --no-startup-id ~/.i3/i3_selectterm
+bindcode Mod1+$mod+$enter_code exec --no-startup-id ~/.i3/i3_selectterm
 bindcode $mod+$yo_code exec --no-startup-id ~/.i3/i3_selectwin2
 
 
@@ -481,6 +493,7 @@ assign [class="^Firefox$"]                  → 2 $ws2
 assign [class="^Skype$"]                    → 3 $ws3 
 assign [title="^.*Google Chrome$"]          → 7 $ws7
 assign [title="TerminalRadio$"]             → 0 $ws0
+assign [class="xfreerdp"]                   → 8 $ws8
 assign [class=".erminator$"]                → 1 $ws1
 assign [class="zoom"]                       → 6 $ws6
 assign [class="Viber.*"]                    → 9 $ws9
