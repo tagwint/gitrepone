@@ -479,13 +479,24 @@ bar {
 status_command "~/.i3/i3statusES 2>~/.i3/i3statusES.log" } 
 
 assign [class="^Firefox$"]                  → 2 $ws2 
+
 assign [class="^Skype$"]                    → 3 $ws3 
+for_window [class="^Skype$"] focus 
+
 assign [title="^.*Google Chrome$"]          → 7 $ws7
+for_window [title="^.*Google Chrome$"] focus
+
 assign [title="TerminalRadio$"]             → 0 $ws0
+
 assign [class="xfreerdp"]                   → 8 $ws8
+for_window [class="xfreerdp"] focus
+
 assign [class=".erminator$"]                → 1 $ws1
 assign [class="zoom"]                       → 6 $ws6
+
 assign [class="Viber.*"]                    → 9 $ws9
+for_window  [class="Viber.*"] focus
+
 assign [title="^.*Oracle VM VirtualBox.*$"] → 4 $ws4
 assign [title="^Remmina.*$"]                → 5 $ws5
 
