@@ -37,6 +37,8 @@ upd () {
     }
 
     MUSTIT=$PRE"${MTIT}"$COL'#ffcc99'$CER
+    BTRY=$(upower -i $(upower -e | grep 'BAT') | grep percent | awk '{ print $NF }')
+    BTRYTIT=$PRE"${BTRY:-}"$COL'#22cc22'$CER
 
    #cmus
    CmusMTIT='NoCmus'
@@ -51,7 +53,7 @@ upd () {
 
 
    LG=$PRE"  $(setxkbmap -query | awk '/layout/{print $2}'|tr 'a-z' 'A-Z')"$COL'#229922'$CER
-   echo "[$LG,${MUSTIT},${CmusMUSTIT},$UPTIME,$VOL,$LOAD,$FECHA]," || exit 1
+   echo "[$LG,${MUSTIT},${CmusMUSTIT},$UPTIME,$VOL,$LOAD,$FECHA,$BTRYTIT]," || exit 1
 }
 
 
@@ -63,7 +65,8 @@ trap 'rm $SELFPID' EXIT
 
 while :
 do
-   upd 
+   date >> /tmp/i3status.log 
+   upd | tee -a /tmp/i3status.log 2>&1
    sleep 7s &
    wait
 done

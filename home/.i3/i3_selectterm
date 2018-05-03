@@ -1,0 +1,28 @@
+#!/bin/bash
+setxkbmap us
+#rofi -show window -width 70 -font "snap 22"  -window-format: {w:14} {c} {t} {n} {r}  -filter "Term.*r" -regex
+rofi -show window -width 70 -font "snap 22"  -filter "Term.*r" -regex
+
+#    Window Mode
+#        -window-format format
+
+#        Format what is being displayed for windows.
+
+#        format: {field[:len]}
+
+#        field:
+
+#        ·   w: Desktop name
+
+#        ·   t: Title of window
+
+#        ·   n: Name
+
+#        ·   r: Role
+
+#        ·   c: Class
+
+#        len: maximum field length (0 for auto-size). If length negative and window width is negative field length is width - len.
+
+#        default: {w} {c} {t}
+

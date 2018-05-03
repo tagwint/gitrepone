@@ -117,7 +117,7 @@ exec --no-startup-id clipit
 focus_follows_mouse no
 
 ## Conditionally inserted part, replaced at startup, before starting i3
-##### SPECIFIC for bay5 inserted on Sun Apr 29 19:45:27 CEST 2018 @@@
+##### SPECIFIC for bay5 inserted on Thu May  3 09:49:52 CEST 2018 @@@
 ### BEGIN OF DYNAMIC HOST-SPECIFIC INCLUSION 
 exec_always --no-startup-id ~/.i3display
 
