@@ -1,0 +1,16 @@
+#/usr/bin/env bash
+SHARENAME=${1?"Specify share name"}
+MOUNTP=${2:-/mnt/LNB/$SHARENAME}
+[ -d $MOUNTP ] || mkdir -p $MOUNTP || { echo Could not create  mount point in $MOUNTP; exit 1;  }
+TMPDIR=$HOME/.tempx
+[[ -d $TMPDIR ]] || mkdir -p $TMPDIR
+TNAME=$(mktemp  -p  $TMPDIR )
+trap "rm $TNAME" EXIT
+echo username=$CORPUSER>$TNAME
+echo password=$(KRPWD $CORPDOMAIN)>>$TNAME
+chmod 0600 $TNAME
+sudo mount -t cifs //${CORPSHAREHOST}/$SHARENAME $MOUNTP -o credentials=${TNAME},uid=$(id -u $(id -un)),sec=ntlm,vers=1.0 
+EC=$?
+[[ ${EC} -eq 0 ]]  && { echo Successfully mounted ${SHARENAME} on $MOUNTP ; vfm $MOUNTP; }
+[[ ${EC} -eq 32 ]] && vfm $MOUNTP ## alreadymounted earlier
+
