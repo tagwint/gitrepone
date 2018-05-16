@@ -7,10 +7,11 @@ TMPDIR=$HOME/.tempx
 TNAME=$(mktemp  -p  $TMPDIR )
 trap "rm $TNAME" EXIT
 echo username=$CORPUSER>$TNAME
-echo password=$(KRPWD $CORPDOMAIN)>>$TNAME
+echo password=$(KRPWD ${CORPUSER}@${CORPDOMAIN})>>$TNAME
 chmod 0600 $TNAME
 sudo mount -t cifs //${CORPSHAREHOST}/$SHARENAME $MOUNTP -o credentials=${TNAME},uid=$(id -u $(id -un)),sec=ntlm,vers=1.0 
 EC=$?
+[[ ! ${EC} -eq 0 ]] && echo exited with code $EC
 [[ ${EC} -eq 0 ]]  && { echo Successfully mounted ${SHARENAME} on $MOUNTP ; vfm $MOUNTP; }
 [[ ${EC} -eq 32 ]] && vfm $MOUNTP ## alreadymounted earlier
 
