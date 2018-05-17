@@ -1,0 +1,9 @@
+#!/bin/bash
+estmp=/tmp/editserver
+selfdir=$(dirname $0)
+mkdir -p $estmp
+export EDITSERVER_TMP=$estmp
+#export EDITSERVER_BLOCKING=1
+#export EDITSERVER_CMD='terminator -e "vim %s"'
+export EDITSERVER_CMD='xfce4-terminal --command "vim %s"'
+plackup -s Starman -p ${1:-9292} -a ${selfdir}/editserver.psgi
