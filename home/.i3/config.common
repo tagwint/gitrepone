@@ -235,6 +235,7 @@ bindcode --release $mod+Shift+$kpMul_code   exec --no-startup-id  ~/bin/scrshann
 bindsym  --release $mod+Control+Print       exec --no-startup-id ~/bin/rrec2pix7
 bindsym  --release $mod+Shift+Control+Print exec --no-startup-id ~/bin/rrec2pub
 
+bindsym $mod+Ctrl+F11            exec --no-startup-id flameshot gui
 
 bindsym  $mod+Control+0 exec --no-startup-id vxdoitup xmustream MRU
 bindsym  $mod+Control+1 exec --no-startup-id vxdoitup xmustream 
