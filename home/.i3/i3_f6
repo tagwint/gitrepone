@@ -7,7 +7,7 @@ nfy ()
 }
 
 WTIT='MaxCare - Mozilla Firefox'
-WTIT='zoom_0.mp4 - mpv'
+WTIT='zoom_0.*mpv$'
 EW=$(xdotool search --limit 1  --name "$WTIT")
 TRYW=$(cat /tmp/lsw )
 LASTSHOWNW=${TRYW:-0}
