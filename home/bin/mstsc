@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#set -x
+set -x
 
 
 defuser=${CORPUSER?"Unspecified CORP user"}
@@ -65,6 +65,8 @@ runcmdTRM () {
 }
 
 [[ $u = *"$CORPDOMAIN"* || $h = *"$CORPDOMAIN"* ]] && AUXOPT="/sec:rdp"
+[[ $h = *js1* ]] && AUXOPT=
+
 RDPCMD="xfreerdp +clipboard /size:$GOPT /u:'$u' /p:'$p'  /v:$h  /t:'$WTIT' -grab-keyboard ${AUXOPT}"
 #echo Running cmd: "$RDPCMD"
 runcmd "$RDPCMD"  &
