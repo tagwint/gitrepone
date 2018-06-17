@@ -9,7 +9,11 @@ echo '[],'
 readonly PRE='{ "full_text": "'
 readonly COL='", "color": "'
 readonly CER='" }'
-
+_ala () {
+ (speaker-test -t sine -f ${1:-220} >/dev/null )>/dev/null & pid=$!
+  sleep 0.1s 
+  kill -9 $pid 2>/dev/null 
+}
 #KERNELV=$PRE"K: $(uname -sr)"$COL'#bbaacc'$CER
 
 i=5
@@ -39,7 +43,10 @@ upd () {
     MUSTIT=$PRE"${MTIT}"$COL'#ffcc99'$CER
     BTRY=$(upower -i $(upower -e | grep 'BAT') | grep percent | awk '{ print $NF }')
     BTRYTIT=$PRE"${BTRY:-}"$COL'#22cc22'$CER
-
+    BTRYVAL=$(echo $BTRY |cut -d '%' -f1)
+    upower --dump | grep -q 'state:.*dischar' && {
+    [ ${BTRYVAL:-100} -le 8 ] && _ala 440
+    }
    #cmus
    CmusMTIT='NoCmus'
    cmus-remote -Q >/dev/null && {
