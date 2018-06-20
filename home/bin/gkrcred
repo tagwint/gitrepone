@@ -1,0 +1,76 @@
+#!/bin/bash
+
+#set -x
+## THIS retrieves user password from keyring to stdout
+## Expected parameters form is host[.domain]/user[.domain]
+## Search approach is :
+
+#if username given contains also domain name then only  user@domain
+#if username given contains no domain name, then it is first tried to match as is
+#   and if not found then tried name@defaultdomain
+
+# Duplicated entries in keyring reported as error
+
+nfy ()
+{
+  local lM=${1:-"Empty message"}
+  echo $lM
+  notify-send "Notify" "$lM"  -t 4000
+}
+
+# default domain name, used for:
+# 1. appending to username to search keryring again unless non-domained name found in KR
+# 2. (? appenidnt to hostname ?A)
+defuser=${CORPUSER}
+udefdomain=${CORPDOMAIN}
+hdefdomain=${CORPDOMAIN}
+
+uh=${1?"host/user not specified"}
+
+[[  ${uh} =~ ./. ]] || { nfy "Wrong syntax. Expected paramter format is hostname[.domainname]/user[.domainname]" ; exit 2;  }
+
+u=$(echo $uh|awk -F / '{ print $2 }')
+u=${u:-${defuser}@${udefdomain}}
+h=$(echo $uh|awk -F / '{ print $1 }')
+
+if [[  ${u} =~ .@. ]]
+then
+	udomain=$(echo ${u} | awk -F@ ' {print $2} ')
+else
+	udomain=$udefdomain
+fi
+
+if [[  ${h} =~ .@. ]]
+then
+	hdomain=$(echo ${h} | awk -F@ ' {print $2} ')
+else
+	hdomain=$hdefdomain
+fi
+
+#echo u=$u
+
+p=$(KRPWDE $u)
+
+if [[ -z "$p" ]] ; then
+   if [[ ! $u =~ .@. ]] ; then
+      udomained=${u}@${udefdomain}  
+      usearched=${udomained}
+      p=$(KRPWDE ${usearched})
+      [[ -z "$p" ]] || ufound=${udomained}
+   fi
+   usearched="$usearched $u"
+else 
+   ufound=$u
+fi
+
+[[ -z "$p" ]] && { 
+ tmsg="Could not poll keyring for pass, tried users:  ${usearched}"
+ notify-send "$tmsg" "FAILURE" --urgency critical -t 0  
+ echo "$tmsg"; exit 1
+}
+
+echo $p
+#echo u=$u
+#echo ufound $ufound
+#echo p=$p
+
