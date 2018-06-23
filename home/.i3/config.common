@@ -124,6 +124,7 @@ focus_follows_mouse no
 #http://docs.slackware.com/howtos:window_managers:keyboard_layout_in_i3
 
 exec --no-startup-id "~/.i3/i3keepwinlayout.py 2>&1 | ts  '[%Y-%m-%d_%H%M%S]' >>~/.i3/eng2.log"
+exec --no-startup-id "~/bin/auto_editserver"
 
 for_window [class="Xfce4-terminal"] floating enable
 for_window [class="xfce4-terminal"] floating enable
