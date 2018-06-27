@@ -1,0 +1,15 @@
+#!/bin/bash
+export H2F=${H2:-~/.histkeep2}
+H2BAKDIR=~/.bak/cmdhist
+mkdir -p ${H2BAKDIR}
+# remove all kills with numerical PIDs
+BKSUFF=$(date "+%Y%m%d_%H%M%S")
+sed -i.${BKSUFF} -e '/kill -.*[[:digit:]]*$/d' -e '/ooo.Bc,/d' $H2F
+[ -f ${H2F}.${BKSUFF} ] && mv ${H2F}.${BKSUFF} $H2BAKDIR/
+# remove duplicates w/o sorting
+cat $H2F | awk '!x[$0]++' | sponge $H2F
+# remove lines marked with echo #XXX<something> and <something> -lines
+grep -Fvxf <(sed '/^echo #XXX/!d' $H2F | sed 's/^echo #XXX//') $H2F | sed '/^echo #XXX/d' | sponge $H2F
+# means if you do not want some line in history, you should :
+# get it from history to command line, edit by prepending with 'echo #XXX' and enter
+# this way you tell the purifyier to remove them once purify runs again
