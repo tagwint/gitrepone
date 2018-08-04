@@ -485,8 +485,8 @@ assign [class="^Firefox$"]                  → 2 $ws2
 assign [class="^Skype$"]                    → 3 $ws3 
 for_window [class="^Skype$"] focus 
 
-assign [class="google-chrome" title="^(?!mutt).*$"] → 7 $ws7
-#assign [title="^.*Google Chrome$"]          → 7 $ws7
+assign [class=".oogle-.hrome" title="^(?!mutt).*$"] → 7 $ws7
+# assign [title="^.*Google Chrome$"]          → 7 $ws7
 for_window [title="^.*Google Chrome$"] focus
 
 assign [title="TerminalRadio$"]             → 0 $ws0
