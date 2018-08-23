@@ -133,7 +133,7 @@ grep -v '^\s*#.*$' ~/.ssh/known_hosts  |
 # host may be also known by name specified in ssh config
 # when it differs from ssh real host name, it does not get
 # into known_host file, so add those to valid list like this
-grep -i '^Host\s*' .ssh/config |
+grep -i '^Host\s*' ~/.ssh/config |
   sed 's/^Host[[:space:]]*//'  |
   sed 's/[[:space:]]/\n/g'     |
   grep -v '^[[:space:]]*$'     |
@@ -178,7 +178,7 @@ _RDIR=${2:-$_RDEFDIR}
 export RDIR=${_RDIR%/}/   # ensure trailing slash is there
 echo $RDIR is default remote dir
 #file name pattern
-set +x
+#set -x
 PAR3="$3"
 
 PAR4="$4"
@@ -535,7 +535,7 @@ BUFF20=$(mktemp "/tmp/${TMPFX}.XXXXXX")
 # reusable primariy buffer, used fzf output in execute[-mulit]
 PRIMB=$(mktemp "/tmp/${TMPFX}.XXXXXX")
 export PRIMB
-echo $PRIMB
+# echo $PRIMB
 
 
 
@@ -559,7 +559,7 @@ fi
 #echo ssh -q "$RCONN" $RBLDLISTCMD 
 echo Preparing remote environment ... 
 #set -x
-pushd $SSHVIMRP && tar zc . -C $(dirname $LSHELL_AUXRC) $(basename $LSHELL_AUXRC)  | ssh $RCONN "mkdir -p $RVIMRP ; tar zxf - -C $RVIMRP " ; popd
+pushd $SSHVIMRP >/dev/null && tar zc . -C $(dirname $LSHELL_AUXRC) $(basename $LSHELL_AUXRC)  | ssh $RCONN "mkdir -p $RVIMRP ; tar zxf - -C $RVIMRP " ; popd >/dev/null 
 echo Done
 
 # trap to cleanup all temp files with our prefix on exit
