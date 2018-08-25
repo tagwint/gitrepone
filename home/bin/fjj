@@ -358,7 +358,7 @@ view_less () {
       (( VID++ ))
       export FPANETIT="scp://$RCONN//$RABSP"
       export FWINDTIT="V${VID}:$(basename $RABSP)"
-      ${LTERM}  "ssh -q -tt $RCONN \" $RSHEV;  { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }; less $RABSP || { echo Please read above, there must be some error msg ;read K; } \" "
+      ${LTERM}  "ssh -q -tt $RCONN \" $RSHEV;  { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }; less -r $RABSP || { echo Please read above, there must be some error msg ;read K; } \" "
   done
 }
 
