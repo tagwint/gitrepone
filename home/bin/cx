@@ -1,0 +1,106 @@
+#!/bin/bash
+#
+# Creation of LXC container
+# 
+# sudo brctl addbr most0
+# sudo ip adddress add 10.7.7.1/24 dev most0
+# sudo ip address add 10.7.7.1/24 dev most0
+# ip link set most0 up
+# sudo ip link set most0 up
+
+# This creates new instance of centos7
+
+[[ -f Vagrantfile ]] && { echo Vagrantfile already exists ; exit 1; }
+
+INUM=${1:?"No number specified, expected 1..150"}
+IPT=$(( INUM + 100 ))
+HOSTNAME=${2:-lco7${IPT}}
+IPADDR=10.7.7.$IPT
+
+cat >Vagrantfile<<EOV
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+Vagrant.configure("2") do |config|
+
+  config.vm.define :${HOSTNAME} do |config|
+      config.vm.box = "magneticone/centos-7"
+      config.vm.hostname = "${HOSTNAME}"
+      config.vm.box_version = "${BOXVER:->=0}"
+      config.vm.network "private_network", ip: "${IPADDR}", lxc__bridge_name: 'most0',
+      austo_config: false
+      # request to make a synced folder causes COPY of the source to destination!!!
+      # config.vm.synced_folder "/vz/shared", "/home/shared" 
+      # config.vm.provider "lxc" do |vb|
+      #   # Enable symlinks in vagrant shared folder, https://coderwall.com/p/b5mu2w
+      #   # vb.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/v-root", "1"]
+      #   vb.memory = "${RAMMB:-1568}"
+      # end
+      config.vm.provision :shell, path: "bootstrap.sh"
+      # config.ssh.keys_only = false
+      # set auto_update to false, if you do NOT want to check the correct 
+      # additions version when booting this machine
+      config.ssh.forward_agent = true
+  end
+
+end
+EOV
+
+cat >bootstrap.sh <<EOB
+#!/usr/bin/env bash
+useradd joker 
+echo '%joker ALL=(ALL) NOPASSWD: ALL'>/etc/sudoers.d/joker
+mkdir -p /home/joker/.ssh
+echo 'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAn9xxCkt0/rGNaAchLaufVoIcqMvEOFHjELOr9FVfUpGhQkeYcXanaQis2gt3KsGZMzNi8K9No88N6s6OT802yqptGKRZB2cBS+uPG8tpoKrRTUE+ZYYpBc0yO1C99HcqkGsYjVXJjltVnN5I/pc7h2SwU1Sd6caFMZSRQuveXeEz9HWSMwAJmlFb0R5q5zhMllL/Xg7g3O8v+UcaEEF+kRH6YvJmvQtJKkFsb9lII8IahIYxPhZcqaSZYF68lxh6qPwAH9gzrrK/KmFkxuMcNxO8E6lnbT7jiJyX+rDh0uu1N+q52VUgyhWbg0crRgWy1n6HXCgD2fW1skbv66C8yQ== viktorkh@cape4' >> /home/joker/.ssh/authorized_keys
+chmod 0700 /home/joker/.ssh
+chmod 0600 /home/joker/.ssh/authorized_keys
+chown -R joker.joker /home/joker
+
+mkdir -p /root/.ssh
+echo '##ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAn9xxCkt0/rGNaAchLaufVoIcqMvEOFHjELOr9FVfUpGhQkeYcXanaQis2gt3KsGZMzNi8K9No88N6s6OT802yqptGKRZB2cBS+uPG8tpoKrRTUE+ZYYpBc0yO1C99HcqkGsYjVXJjltVnN5I/pc7h2SwU1Sd6caFMZSRQuveXeEz9HWSMwAJmlFb0R5q5zhMllL/Xg7g3O8v+UcaEEF+kRH6YvJmvQtJKkFsb9lII8IahIYxPhZcqaSZYF68lxh6qPwAH9gzrrK/KmFkxuMcNxO8E6lnbT7jiJyX+rDh0uu1N+q52VUgyhWbg0crRgWy1n6HXCgD2fW1skbv66C8yQ== viktorkh@cape4' >> /root/.ssh/authorized_keys
+chmod 0700 /root/.ssh
+chmod 0600 /root/.ssh/authorized_keys
+
+# yum clean all
+# yum -y update 
+# yum -y install wget epel-release 
+# yum -y install tcping vim 
+EOB
+
+# cat >sshconfinsert <<EOS
+# #dynamically entered by $0
+# Host $HOSTNAME
+# 	User root
+# 	Hostname ${IPADDR}
+
+# EOS
+
+echo "${IPADDR} $HOSTNAME">etchostsinsert
+
+# sudo sed -i  "/^...EOFVAGRANT/ {
+#          h
+#          r etchostsinsert
+#          g
+#          N
+#      }" /etc/hosts
+
+###EOFVAGRANT
+sudo sed -i -e '/^...BOFVAGRANT/r etchostsinsert' /etc/hosts
+
+
+# # https://unix.stackexchange.com/a/193498/84561
+# sudo ed -s /etc/hosts <<IN
+# /^...EOFVAGRANT/-r etchostsinsert
+# w
+# q
+# IN
+
+
+# sed -i  "/^...EOFVAGRANT/ {
+#          h
+#          r sshconfinsert
+#          g
+#          N
+#      }" ~/.ssh/config
+
+vagrant up --provider=lxc && echo $HOSTNAME has been prepared
+
