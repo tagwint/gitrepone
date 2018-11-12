@@ -3,7 +3,6 @@
 # Creation of LXC container
 # 
 # sudo brctl addbr most0
-# sudo ip adddress add 10.7.7.1/24 dev most0
 # sudo ip address add 10.7.7.1/24 dev most0
 # ip link set most0 up
 # sudo ip link set most0 up
@@ -17,34 +16,69 @@ IPT=$(( INUM + 100 ))
 HOSTNAME=${2:-lco7${IPT}}
 IPADDR=10.7.7.$IPT
 
+
+## If necessary created associated bridge
+## when destroying last lxc container, bridge may get removed automatically
+## that is why doing this 
+brctl show | grep '^most0' || {
+sudo brctl addbr most0 
+sudo ip address add 10.7.7.1/24 dev most0                                                                                                            
+sudo ip link set most0 up 
+}
+
 cat >Vagrantfile<<EOV
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 Vagrant.configure("2") do |config|
 
-  config.vm.define :${HOSTNAME} do |config|
-      config.vm.box = "magneticone/centos-7"
-      config.vm.hostname = "${HOSTNAME}"
-      config.vm.box_version = "${BOXVER:->=0}"
-      config.vm.network "private_network", ip: "${IPADDR}", lxc__bridge_name: 'most0',
-      austo_config: false
-      # request to make a synced folder causes COPY of the source to destination!!!
-      # config.vm.synced_folder "/vz/shared", "/home/shared" 
-      # config.vm.provider "lxc" do |vb|
-      #   # Enable symlinks in vagrant shared folder, https://coderwall.com/p/b5mu2w
-      #   # vb.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/v-root", "1"]
-      #   vb.memory = "${RAMMB:-1568}"
+  config.vm.define :${HOSTNAME} do |centos|
+      centos.vm.box = "magneticone/centos-7"
+      # centos.trigger.before :up do |trg|
+      #   trg.info = "Mounting shard before UP"
+      #   trg.run = {path: "sharedmount.sh"}
       # end
-      config.vm.provision :shell, path: "bootstrap.sh"
+      centos.trigger.after :up do |trg|
+        trg.info = "Mounting shared after UP"
+        trg.run = {path: "sharedmount.sh"}
+      end
+      centos.vm.hostname = "${HOSTNAME}"
+      centos.vm.box_version = "${BOXVER:->=0}"
+      centos.vm.network "private_network", ip: "${IPADDR}", lxc__bridge_name: 'most0',
+      auto_config: false
+      centos.vm.provision :shell, path: "bootstrap.sh"
       # config.ssh.keys_only = false
       # set auto_update to false, if you do NOT want to check the correct 
       # additions version when booting this machine
-      config.ssh.forward_agent = true
+      centos.ssh.forward_agent = true
   end
 
 end
 EOV
 
+# TODO Associative array of shares
+# declare -A LXSHARE
+# LXSHARE[/vz/shared]=home/shared
+
+ATS=attachshare.sh
+cat >sharedmount.sh <<EOMS
+#!/usr/bin/env bash
+LXC_SUBD=\$(ls /var/lib/lxc -1 | grep '_${HOSTNAME}_' | sort | tail -n 1)
+notify-send "Mounting share"
+if [[ -n "\$LXC_SUBD" ]] ; then 
+  echo Creating $ATS script for mounting share
+  echo '#!/usr/bin/env bash'>$ATS
+  echo LXC_CFG=/var/lib/lxc/\${LXC_SUBD}/config>>$ATS
+  echo 'sudo grep ^#DYN \${LXC_CFG} && { echo Share seems already added ; exit 1; }'>>$ATS
+  echo 'sudo echo \#DYN_${HOSTNAME} dynamically added|sudo tee -a \${LXC_CFG}'>>$ATS
+  echo $'echo \'lxc.mount.entry=/vz/shared home/shared none bind,create=dir 0 0\'|sudo tee -a \${LXC_CFG}'>>$ATS
+  echo "vagrant reload" >>$ATS
+  chmod 0755 $ATS
+  echo Run $ATS to mount shared folder. Implies reload.
+else 
+  echo "Could not found LXC_PATH for $HOSTNAME container, Failed to create?"
+fi
+EOMS
+chmod 0755 sharedmount.sh
 cat >bootstrap.sh <<EOB
 #!/usr/bin/env bash
 useradd joker 
