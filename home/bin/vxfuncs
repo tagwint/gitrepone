@@ -1,0 +1,98 @@
+# functions gathered here to be sourced at once
+# vim: ft=sh
+
+function vxyn ()
+{
+  local lhint=${1:-'Are you sure? (y/n)'}
+  local REPLY=N
+  local lRetVAR=${2:-VXRET}
+
+  read -p "$lhint"  
+  while [ ! "$REPLY" == "y" -a ! "$REPLY" == "n" ]
+  do 
+    read -p "Enter (y/n)?"  
+  done
+  if [ "$REPLY" == "y" ] 
+  then
+    echo yes
+    return 0
+  else 
+    echo no
+    return 1
+  fi
+# 0 means yes (success), 1 - no
+} 
+
+vagcd () {
+  local sel
+  sel=$(vagrant global-status | grep '^.......  ' | grep -v '^id '|fzf|awk '{print $NF}')
+  [[ -n "$sel" ]] && cd "$sel" && ls 
+}
+
+function vagsnap () {
+  local p n s r o SSN bpref src dst vagst
+  [ -f Vagrantfile ]              || { echo No Vagrantfile in this dir; return 1; }
+  vagst=$(vagrant status  | egrep  '\(virtualbox\)|\(lxc\)')
+  [[ -n "$vagst" ]] || { echo Neither vbox nor lxc ; return 1; } 
+  p=$({ egrep  '\(virtualbox\)|\(lxc\)' | awk '{print $NF}' | tr -d '()' ; }<<<"${vagst}")
+  case $p in
+    virtualbox)
+        vagrant snapshot ${1:-list}
+        ;;
+    lxc)
+        echo TBD lxc snapshot handling
+        n=$({ egrep  '\(virtualbox\)|\(lxc\)' | awk '{print $1}' ; }<<<"${vagst}" )
+        s=$({ egrep  '\(virtualbox\)|\(lxc\)' | awk '{print $2}' ; }<<<"${vagst}" )
+        bpref=$(basename $(pwd))
+        o=${1:-list}
+        if [[ !  "${o}" == "list" ]]; then
+          [[ ${s} == "running" ]] && { echo $n is running, you may want to stop it first; return 1; }
+        fi;
+        r=$(sudo find /var/lib/lxc  -maxdepth 1 -type d -type d  -regex "^/var/lib/lxc/${bpref}_${n}.*$")
+        echo Content of $r dir:
+        sudo find $r -maxdepth 1 -type d  -name rootfs\* | awk -F/ '{ print $NF }'
+        case $o in
+          save)
+             SSN=${2:-"bak"}
+             echo Saving ${SSN} snapshot
+             dst=${r}/rootfs_${SSN}
+             echo Saving ...
+             vxyn "rsync -a --delete ${r}/rootfs/ ${dst}/ Sure to continue? " || return 1;
+             echo No Progess bar here ...
+             sudo  rsync -a --delete ${r}/rootfs/ ${dst}/ && echo Save Completed OK
+             ;;
+          restore)
+             SSN=${2:-"NONE"}
+             if [[ ! "$SSN" == "NONE"  ]] ; then
+               sudo ls ${r}/rootfs_${SSN} || { echo NO ${SSN} is there; return 1; }
+               src=${r}/rootfs_${SSN}
+             else 
+               src=$(sudo find $r -maxdepth 1 -type d -regex "^.*/rootfs.+$" | fzf)
+             fi
+             echo Restoring ${SSN} snapshot
+             dst=${r}/rootfs
+             vxyn "rsync -a --delete ${src}/ ${dst}/  Sure to continue? " || return 1;
+             echo Restoring ...
+             echo No Progess bar here ...
+             sudo  rsync -a --delete ${src}/ ${dst}/ && echo Restore Completed OK
+             ;;
+          list)
+             ## "Listing done above"
+             ;;
+          *)
+             echo "Unkonwn operation VM type $o"
+             ;;
+        esac
+        ;;
+    *)
+        echo "Unkonwn vag VM type $p"
+        return 1
+        ;;
+  esac
+}
+
+svfm () {
+  local c
+  c=$(which vfm)
+  sudo $c $*
+}
