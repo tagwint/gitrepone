@@ -88,6 +88,7 @@ echo 'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAn9xxCkt0/rGNaAchLaufVoIcqMvEOFHjELOr9F
 chmod 0700 /home/joker/.ssh
 chmod 0600 /home/joker/.ssh/authorized_keys
 chown -R joker.joker /home/joker
+sudo usermod -aG vagrant joker
 
 mkdir -p /root/.ssh
 echo '##ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAn9xxCkt0/rGNaAchLaufVoIcqMvEOFHjELOr9FVfUpGhQkeYcXanaQis2gt3KsGZMzNi8K9No88N6s6OT802yqptGKRZB2cBS+uPG8tpoKrRTUE+ZYYpBc0yO1C99HcqkGsYjVXJjltVnN5I/pc7h2SwU1Sd6caFMZSRQuveXeEz9HWSMwAJmlFb0R5q5zhMllL/Xg7g3O8v+UcaEEF+kRH6YvJmvQtJKkFsb9lII8IahIYxPhZcqaSZYF68lxh6qPwAH9gzrrK/KmFkxuMcNxO8E6lnbT7jiJyX+rDh0uu1N+q52VUgyhWbg0crRgWy1n6HXCgD2fW1skbv66C8yQ== viktorkh@cape4' >> /root/.ssh/authorized_keys
@@ -137,4 +138,5 @@ sudo sed -i -e '/^...BOFVAGRANT/r etchostsinsert' /etc/hosts
 #      }" ~/.ssh/config
 
 vagrant up --provider=lxc && echo $HOSTNAME has been prepared
+./attachshare.sh
 

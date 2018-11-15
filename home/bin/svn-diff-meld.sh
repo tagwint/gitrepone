@@ -22,7 +22,7 @@ RFile=${6}
 # echo "$@"
 # echo ---------------
 
-if [ ! "$SSH_CONNECTION" ]
+if [[ ! "$SSH_CONNECTION" || -n "$DISPLAY" ]]
 then 
 	meld --label="$LLabel"    "$LFile"   \
 	     --label="$RLabel"    "$RFile"   
