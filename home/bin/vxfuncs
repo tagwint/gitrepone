@@ -40,7 +40,6 @@ function vagsnap () {
         vagrant snapshot ${1:-list}
         ;;
     lxc)
-        echo TBD lxc snapshot handling
         n=$({ egrep  '\(virtualbox\)|\(lxc\)' | awk '{print $1}' ; }<<<"${vagst}" )
         s=$({ egrep  '\(virtualbox\)|\(lxc\)' | awk '{print $2}' ; }<<<"${vagst}" )
         bpref=$(basename $(pwd))
