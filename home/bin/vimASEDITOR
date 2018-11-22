@@ -1,0 +1,22 @@
+#!/bin/bash -
+##https://stackoverflow.com/questions/38888022/bash-edit-and-execute-command-echo
+if [[ "$(basename "$1")" =~ bash-fc..+ ]]; then
+  FC_TMPY=YES
+  OTHERVIMINFO=~/.tmpviminfo
+  VOPT="-i $OTHERVIMINFO"
+fi
+vim $VOPT "$@"
+
+if [[ "${FC_TMPY:-NO}" == "YES" ]]; then
+  # Looks like edit-and-execute (C-x C-e)
+
+  # The user has finished editing the temporary file.
+  # It's time to evaluate the contents.
+  source "$1"
+
+  # Save current process ID for the subshell below.
+  pid=$PID
+
+  # The subshell helps to suppress the `Terminated` message.
+  ( kill $pid >/dev/null 2>&1 )
+fi

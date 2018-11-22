@@ -58,10 +58,10 @@ EW=$(xdotool search --name "$WTIT")
 #rdesktop  -K -u "$u" -d $udomain $h -p "$p" -T "$WTIT" ${GOPT} -P -x m -E &
 
 runcmd () {
- source <(echo $1) 
+ source <(echo $1)
 }
 runcmdTRM () {
- source <(echo jjterm  \"$1\")
+ source <(echo jjterm  \"$1\") 
 }
 
 [[ $u = *"$CORPDOMAIN"* || $h = *"$CORPDOMAIN"* ]] && AUXOPT="/sec:rdp"
