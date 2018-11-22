@@ -12,6 +12,7 @@
 [[ -f Vagrantfile ]] && { echo Vagrantfile already exists ; exit 1; }
 
 INUM=${1:?"No number specified, expected 1..150"}
+KMEN=${COKMEN:-7}
 IPT=$(( INUM + 100 ))
 HOSTNAME=${2:-lco7${IPT}}
 IPADDR=10.7.7.$IPT
@@ -32,7 +33,7 @@ cat >Vagrantfile<<EOV
 Vagrant.configure("2") do |config|
 
   config.vm.define :${HOSTNAME} do |centos|
-      centos.vm.box = "magneticone/centos-7"
+      centos.vm.box = "magneticone/centos-${KMEN}"
       # centos.trigger.before :up do |trg|
       #   trg.info = "Mounting shard before UP"
       #   trg.run = {path: "sharedmount.sh"}
