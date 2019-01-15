@@ -60,7 +60,7 @@ upd () {
 
 
    LG=$PRE"  $(setxkbmap -query | awk '/layout/{print $2}'|tr 'a-z' 'A-Z')"$COL'#229922'$CER
-   echo "[$LG,${MUSTIT},${CmusMUSTIT},$UPTIME,$VOL,$LOAD,$FECHA,$BTRYTIT]," || exit 1
+   echo "[${MUSTIT},${CmusMUSTIT},$UPTIME,$VOL,$LOAD,$FECHA,$LG,$BTRYTIT]," || exit 1
 }
 
 
