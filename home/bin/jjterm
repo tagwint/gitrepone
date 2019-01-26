@@ -8,7 +8,7 @@
 ## GYP=$(( Yaxis * 3 / 5 ))
 ## # sizes in symbols for others
 GXS=$(( $(tput cols) * 15 / 15 ))
-GYS=$(( $(tput lines) * 14 / 15 ))
+GYS=$(( $(tput lines) * 12 / 15 ))
 
 GEOP="--geometry=${GXP}x${GYP}"
 GEOS="--geometry=${GXS}x${GYS}"
