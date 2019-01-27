@@ -2,29 +2,37 @@
 #
 # Creation of LXC container
 # 
-# sudo brctl addbr most0
-# sudo ip address add 10.7.7.1/24 dev most0
-# ip link set most0 up
-# sudo ip link set most0 up
 
 # This creates new instance of centos7
-set -x
+ set -x
 [[ -f Vagrantfile ]] && { echo Vagrantfile already exists ; exit 1; }
 
-INUM=${1:?"No number specified, expected 1..150"}
+
+INUM=${1:?"No parameter specified, expected a numbier in range  1..150"}
+if ! [ "$INUM" -eq "$INUM" ] 2> /dev/null
+then
+    echo "$INUM does not look as integer"
+    exit 1
+else
+    [[ "$INUM" -lt 1 || "$INUM" -gt 150 ]] && { echo "$INUM is out of valid range"; exit 1; }
+fi
+
+NWPFX=${VXMOSTNW:-10.7.7.}
+HNPFX=lco$(echo $NWPFX | awk -F. '{ print $(NF-1) }')
 KMEN=${COKMEN:-7}
 IPT=$(( INUM + 100 ))
-HOSTNAME=${2:-lco7${IPT}}
-IPADDR=10.7.7.$IPT
+HOSTNAME=${2:-${HNPFX}${IPT}}
+IPADDR=${NWPFX}$IPT
+BRIDGENAME=most5
 
 
 ## If necessary created associated bridge
 ## when destroying last lxc container, bridge may get removed automatically
 ## that is why doing this 
-brctl show | grep '^most0' || {
-sudo brctl addbr most0 
-sudo ip address add 10.7.7.1/24 dev most0                                                                                                            
-sudo ip link set most0 up 
+brctl show | grep "^$BRIDGENAME" || {
+sudo brctl addbr $BRIDGENAME 
+sudo ip address add ${NWPFX}1/24 dev $BRIDGENAME
+sudo ip link set $BRIDGENAME up 
 }
 
 cat >Vagrantfile<<EOV
@@ -44,7 +52,7 @@ Vagrant.configure("2") do |config|
       end
       centos.vm.hostname = "${HOSTNAME}"
       centos.vm.box_version = "${BOXVER:->=0}"
-      centos.vm.network "private_network", ip: "${IPADDR}", lxc__bridge_name: 'most0',
+      centos.vm.network "private_network", ip: "${IPADDR}", lxc__bridge_name: "$BRIDGENAME",
       auto_config: false
       centos.vm.provision :shell, path: "bootstrap.sh"
       # config.ssh.keys_only = false
