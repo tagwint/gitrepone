@@ -95,3 +95,9 @@ svfm () {
   c=$(which vfm)
   sudo $c $*
 }
+
+lxa () {
+  local sel
+  sel=$(sudo lxc-ls -f | grep ' RUNNIN' | fzf | awk '{print $1}')
+  [[ -n "$sel" ]] && sudo lxc-attach -n "$sel" 
+}
