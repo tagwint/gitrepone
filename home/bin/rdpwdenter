@@ -24,9 +24,9 @@ CWTITLE=$(xprop -id $(xdotool getwindowfocus) | grep '^WM_NAME' | awk '{ print $
 RDHUS=$(echo $CWTITLE | awk '{ print $NF }')
 
 nfy "Retrieving creds for [$RDHUS]"
-gkrcred "$RDHUS" || { nfy "Failed to retrive creds for [$RDHUS]" ; exit 1 ; }
-p=$(gkrcred $RDHUS)
-
+p=$(gkrcred $RDHUS) || { nfy "Failed to retrive creds for [$RDHUS]" ; exit 1 ; }
+ 
+setxkbmap us
 xdotool keyup Super_L 
 xdotool type $p
 xdotool key Return
