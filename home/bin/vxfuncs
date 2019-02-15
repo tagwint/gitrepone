@@ -47,9 +47,9 @@ function vagsnap () {
         if [[ !  "${o}" == "list" ]]; then
           [[ ${s} == "running" ]] && { echo $n is running, you may want to stop it first; return 1; }
         fi;
-        r=$(sudo find /var/lib/lxc  -maxdepth 1 -type d -type d  -regex "^/var/lib/lxc/${bpref}_${n}.*$")
+        r=$(sudo find -L /var/lib/lxc  -maxdepth 1 -type d -type d  -regex "^/var/lib/lxc/${bpref}_${n}.*$")
         echo Content of $r dir:
-        sudo find $r -maxdepth 1 -type d  -name rootfs\* | awk -F/ '{ print $NF }'
+        sudo find -L $r -maxdepth 1 -type d  -name rootfs\* | awk -F/ '{ print $NF }'
         case $o in
           save)
              SSN=${2:-"bak"}
