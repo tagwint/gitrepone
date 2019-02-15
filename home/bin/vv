@@ -3,6 +3,8 @@
 # set -x
 [[ -z "$1" ]] || HSELOPT=(-1 -q "$*")
 
+# rem to test commit
+
 TF1=$(mktemp -u)
 #TF2=$(mktemp -u)
 trap 'rm $TF1' EXIT
