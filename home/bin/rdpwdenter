@@ -17,15 +17,25 @@ CWTITLE=$(xprop -id $(xdotool getwindowfocus) | grep '^WM_NAME' | awk '{ print $
   notify-send --urgency critical --expire-time=0 -i typing-monitor -h int:x:500 -h int:y:500 "WRONG WINCLASS" "Only possible with RD"
   exit 2
 }
+TGTWIN=$(xdotool getactivewindow)
 
 # Since the window proved to be rdesktop, we expect title contains host/user at the end
 # because that is the way it is done in mstsc script which starts all rdp windows
 # thus this script works in pair with that
 RDHUS=$(echo $CWTITLE | awk '{ print $NF }')
 
-nfy "Retrieving creds for [$RDHUS]"
-p=$(gkrcred $RDHUS) || { nfy "Failed to retrive creds for [$RDHUS]" ; exit 1 ; }
- 
+tmperr=/tmp/$(basename ${0})_stderr
+function cleanup () {
+  [ -f "$tmperr"] && rm "$tmperr" ; 
+}
+trap cleanup exit
+
+nfy "Retrieving creds for [$RDHUS], begin on $(date)"
+p=$(gkrcred $RDHUS 2>$tmperr) || { nfy "Failed to retrive creds for [$RDHUS]" ; echo "STDERR: $(cat $tmperr)";  exit 1 ; }
+nfy "Retrieving end on $(date)"
+
+# while retrieving is running, user can switch the window, so need to forcibly go back 
+xdotool windowactivate $TGTWIN
 setxkbmap us
 xdotool keyup Super_L 
 xdotool type $p
