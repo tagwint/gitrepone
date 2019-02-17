@@ -1,6 +1,7 @@
 # functions gathered here to be sourced at once
 # vim: ft=sh
 
+# svn wrapper to not keep password saved
 function svu ()
 {
   local _arg
@@ -18,13 +19,16 @@ function svu ()
             _auth="--password  $(KRPWD githubsvn)" 
 	;;
     esac 
-  echo ${_serv} 
-  _arg=$*
+  echo Server: ${_serv} 
+  _arg="$@"
+  echo '$@': $@ 
+  echo ARG: ${_arg} 
   if [[ ! -z "${_arg}" ]] ;
   then
-    command svn ${_auth} ${_arg}
+    set -x
+    svn "$@"  ${_auth}
   else
-    command svn
+    svn
   fi
 }
 
