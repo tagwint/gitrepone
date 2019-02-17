@@ -27,6 +27,7 @@ function svu ()
   then
     set -x
     svn "$@"  ${_auth}
+    set +x
   else
     svn
   fi
