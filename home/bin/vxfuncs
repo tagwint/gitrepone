@@ -25,9 +25,9 @@ function svu ()
   echo ARG: ${_arg} 
   if [[ ! -z "${_arg}" ]] ;
   then
-    set -x
+    # set -x
     svn "$@"  ${_auth}
-    set +x
+    # set +x
   else
     svn
   fi
