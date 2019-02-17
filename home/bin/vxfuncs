@@ -22,10 +22,15 @@ function svu ()
         *)
            echo "Unknown server for working copy : $_serv Consider using direct svn command instead "; return 1 
     esac 
-  echo Server: ${_serv} 
+  echo Server of working copy detected: ${_serv} 
   _arg="$@"
-  echo '$@': $@ 
-  echo ARG: ${_arg} 
+  # echo '$@': $@ 
+  # echo ARG: ${_arg} 
+  # echo asis below
+  printf '|%q| ' "$@"
+  echo
+  # echo asis above
+  echo =========
   if [[ ! -z "${_arg}" ]] ;
   then
     # set -x
