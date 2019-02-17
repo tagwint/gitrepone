@@ -19,6 +19,8 @@ function svu ()
 	github.com)
             _auth="--password  $(KRPWD githubsvn)" 
 	;;
+        *)
+           echo "Unknown server for working copy : $_serv Consider using direct svn command instead "; return 1 
     esac 
   echo Server: ${_serv} 
   _arg="$@"
