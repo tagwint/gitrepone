@@ -13,7 +13,8 @@ function svu ()
 
     case ${_serv:-none} in
 	svn.${CORPDOMAIN})
-            _auth="--user ${CORPUSER} --password $(KRPWD ${CORPUSER}@${CORPDOMAIN}) " 
+            # _auth="--username ${CORPUSER} --password $(KRPWD ${CORPUSER}@${CORPDOMAIN}) " 
+            _auth="--password $(KRPWD ${CORPUSER}@${CORPDOMAIN}) " 
 	;;
 	github.com)
             _auth="--password  $(KRPWD githubsvn)" 
