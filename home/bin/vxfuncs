@@ -1,6 +1,33 @@
 # functions gathered here to be sourced at once
 # vim: ft=sh
 
+function svu ()
+{
+  local _arg
+  local _serv
+  local _auth
+  command svn --version >/dev/null || { echo "Subversion client svn seem not to be installed here: svn" ; return 1; }
+  svn info >/dev/null &&  _serv=$(svn info | grep ^URL | sed 's|^.*http.*://||;s|/.*$||g')
+  [[ -z ${_serv} ]] && { echo "Could not figure out the server name for this wrk copy dir" ; return 1; }
+
+    case ${_serv:-none} in
+	svn.${CORPDOMAIN})
+            _auth="--user ${CORPUSER} --password $(KRPWD ${CORPUSER}@${CORPDOMAIN}) " 
+	;;
+	github.com)
+            _auth="--password  $(KRPWD githubsvn)" 
+	;;
+    esac 
+  echo ${_serv} 
+  _arg=$*
+  if [[ ! -z "${_arg}" ]] ;
+  then
+    command svn ${_auth} ${_arg}
+  else
+    command svn
+  fi
+}
+
 function vxyn ()
 {
   local lhint=${1:-'Are you sure? (y/n)'}
