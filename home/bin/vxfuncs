@@ -9,20 +9,24 @@ function svu ()
   local _auth
   command svn --version >/dev/null || { echo "Subversion client svn seem not to be installed here: svn" ; return 1; }
   svn info >/dev/null &&  _serv=$(svn info | grep ^URL | sed 's|^.*http.*://||;s|/.*$||g')
-  [[ -z ${_serv} ]] && { echo "Could not figure out the server name for this wrk copy dir" ; return 1; }
-
-    case ${_serv:-none} in
-	svn.${CORPDOMAIN})
-            # _auth="--username ${CORPUSER} --password $(KRPWD ${CORPUSER}@${CORPDOMAIN}) " 
-            _auth="--password $(KRPWD ${CORPUSER}@${CORPDOMAIN}) " 
-	;;
-	github.com)
-            _auth="--password  $(KRPWD githubsvn)" 
-	;;
-        *)
-           echo "Unknown server for working copy : $_serv Consider using direct svn command instead "; return 1 
-    esac 
-  echo Server of working copy detected: ${_serv} 
+  if [[ -z ${_serv} ]] 
+  then 
+    echo "No working copy here, checking arg against valid url"
+    [[ "$@" =~ http.*svn.${CORPDOMAIN} ]] && _serv=svn.${CORPDOMAIN}
+    [[ "$@" =~ http.*github.com ]] && _serv=github.com
+  fi
+  case ${_serv} in
+      svn.${CORPDOMAIN})
+          # _auth="--username ${CORPUSER} --password $(KRPWD ${CORPUSER}@${CORPDOMAIN}) " 
+          _auth="--password $(KRPWD ${CORPUSER}@${CORPDOMAIN}) " 
+      ;;
+      github.com)
+          _auth="--password  $(KRPWD githubsvn)" 
+      ;;
+      *)
+         echo "Unknown server for working copy : $_serv Consider using direct svn command instead "; return 1 
+  esac 
+  echo Server to deal with detected: ${_serv} 
   _arg="$@"
   # echo '$@': $@ 
   # echo ARG: ${_arg} 
