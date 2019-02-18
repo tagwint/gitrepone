@@ -63,10 +63,10 @@ function svu ()
   case ${_serv:-NONE} in
       svn.${CORPDOMAIN})
           # _auth="--username ${CORPUSER} --password $(KRPWD ${CORPUSER}@${CORPDOMAIN}) " 
-          _auth="--password $(KRPWD ${CORPUSER}@${CORPDOMAIN}) " 
+          _pw=$(KRPWDE ${CORPUSER}@${CORPDOMAIN}) &&  _auth="--password ${_pw}"
       ;;
-      github.com)
-          _auth="--password  $(KRPWD githubsvn)" 
+      github.com) 
+          _pw=$(KRPWDE githubsvn) && _auth="--password  ${_pw} " 
       ;;
       NONE) # should not get here
          echo "ERROR: Neither working copy here, nor an url in args, nothing doing " ; return 1 
@@ -77,14 +77,13 @@ function svu ()
   esac 
   echo "INFO: Server to deal with detected: ${_serv}"
   _arg="$@"
-  # echo '$@': $@ 
   # echo ARG: ${_arg} 
   echo -n "INFO: Args passed:"; printf '[%q] ' "$@"
   echo
   echo =========
   if [[ ! -z "${_arg}" ]] 
   then
-    [[ "${_auth:-none}" == "none" ]] &&  { echo "INFO: Auth for $_serv could not be obtained"; return 1; }
+    [[ "${_auth:-none}" == "none" ]] &&  { echo "WARN: Auth for $_serv could not be obtained"; }
     svn "$@"  ${_auth}
   else
     svn "$@"
