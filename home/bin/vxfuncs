@@ -79,10 +79,8 @@ function svu ()
   _arg="$@"
   # echo '$@': $@ 
   # echo ARG: ${_arg} 
-  # echo asis below
   echo -n "INFO: Args passed:"; printf '[%q] ' "$@"
   echo
-  # echo asis above
   echo =========
   if [[ ! -z "${_arg}" ]] 
   then
