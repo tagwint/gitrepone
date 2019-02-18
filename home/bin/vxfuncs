@@ -7,15 +7,60 @@ function svu ()
   local _arg
   local _serv
   local _auth
+  local _urlserv
+  local _wcserv
+  ## <<< must be local, otherwise they mess up from previous runs !!!
   command svn --version >/dev/null || { echo "Subversion client svn seem not to be installed here: svn" ; return 1; }
-  svn info >/dev/null &&  _serv=$(svn info | grep ^URL | sed 's|^.*http.*://||;s|/.*$||g')
-  if [[ -z ${_serv} ]] 
+
+  # test if cwd is a working copy of some repo
+  svn info >/dev/null 2>&1 &&  _wcserv=$(svn info | grep ^URL | sed 's|^.*http.*://||;s|/.*$||g' 2>/dev/null)
+  if [[ -z ${_wcserv} ]] # no, it does not look like a wrk copy of some repo
   then 
-    echo "No working copy here, checking arg against valid url"
-    [[ "$@" =~ http.*svn.${CORPDOMAIN} ]] && _serv=svn.${CORPDOMAIN}
-    [[ "$@" =~ http.*github.com ]] && _serv=github.com
+    echo "INFO: No working copy here, in $(pwd)"
+  else 
+    echo "INFO: Working copy from ${_wcserv} detected "
   fi
-  case ${_serv} in
+
+  # test if the argument contains some http* url
+  # echo "Checking arg against valid url ..."
+  [[ "$@" =~ http.*://([^/]*)/.*$ ]] && _urlserv=${BASH_REMATCH[1]}
+  if [[ -z ${_urlserv} ]] # no server in args 
+  then 
+    echo "INFO: No server name in ${@}"
+  else 
+    echo "INFO: Server name ${_urlserv} detected "
+  fi
+
+  # none of wrk copy and url
+  if [[ "${_wcserv:-NOWCSVR}" == "NOWCSVR" ]] && [[ "${_urlserv:-NOURLSVR}" == "NOURLSVR" ]]
+  then 
+    echo "ERROR: Neither a working copy is here: $(pwd)"
+    echo "_____: Nor url provided in args"
+    return 1;
+  fi
+
+  # not a wrk but just url
+  if [[ "${_wcserv:-NOWCSVR}" == "NOWCSVR" ]] && [[ ! "${_urlserv:-NOURLSVR}" == "NOURLSVR" ]]
+  then 
+    _serv=${_urlserv}
+  fi
+
+  # just wrk
+  if [[ ! "${_wcserv:-NOWCSVR}" == "NOWCSVR" ]] && [[ "${_urlserv:-NOURLSVR}" == "NOURLSVR" ]]
+  then 
+    _serv=${_wcserv}
+  fi
+
+  # both wrk copy and url are there but mismatch
+  if [[ ! "${_wcserv:-NOWCSVR}" == "NOWCSVR" ]] && [[ ! "${_urlserv:-NOURLSVR}" == "NOURLSVR" ]] && [[ ! ${_wcserv} == ${_urlserv} ]]
+  then
+    echo "ERROR: Working copy mismatches requested url:"
+    echo "WC:${_wcserv}"
+    echo "URL:${_urlserv} "
+    return 1;
+  fi
+
+  case ${_serv:-NONE} in
       svn.${CORPDOMAIN})
           # _auth="--username ${CORPUSER} --password $(KRPWD ${CORPUSER}@${CORPDOMAIN}) " 
           _auth="--password $(KRPWD ${CORPUSER}@${CORPDOMAIN}) " 
@@ -23,25 +68,28 @@ function svu ()
       github.com)
           _auth="--password  $(KRPWD githubsvn)" 
       ;;
+      NONE) # should not get here
+         echo "ERROR: Neither working copy here, nor an url in args, nothing doing " ; return 1 
+      ;;
       *)
-         echo "Unknown server for working copy : $_serv Consider using direct svn command instead "; return 1 
+         echo "INFO: Unknown server for working copy, failing back to default svn"
+          
   esac 
-  echo Server to deal with detected: ${_serv} 
+  echo "INFO: Server to deal with detected: ${_serv}"
   _arg="$@"
   # echo '$@': $@ 
   # echo ARG: ${_arg} 
   # echo asis below
-  printf '|%q| ' "$@"
+  echo -n "INFO: Args passed:"; printf '[%q] ' "$@"
   echo
   # echo asis above
   echo =========
-  if [[ ! -z "${_arg}" ]] ;
+  if [[ ! -z "${_arg}" ]] 
   then
-    # set -x
+    [[ "${_auth:-none}" == "none" ]] &&  { echo "INFO: Auth for $_serv could not be obtained"; return 1; }
     svn "$@"  ${_auth}
-    # set +x
   else
-    svn
+    svn "$@"
   fi
 }
 
