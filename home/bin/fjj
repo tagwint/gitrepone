@@ -2,6 +2,11 @@
 #Fuzzy select of remote file/dir
 #set -x
 #_RCONN=${1?"No remote [user@]host specified (1st)"}
+
+if [[ -z "$DISPLAY" ]] && [[ -z "$TMUX" ]]; then
+  echo "WARN: Neither DISPLAY nor TMUX"
+  exit
+fi
 _RCONN=${1}
 
 # local folder to keep downloads
@@ -404,6 +409,7 @@ stat_them () {
   local -r FTMP2=$(t0b)
   local -r FOUT=$(mktemp "/tmp/${TMPFX}.XXXXXX")
   local RABSP
+  local LTERM
   # trim meta info on the left, all cols till delimiter
   trimmeta $FIN $FTMP
   cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
@@ -414,18 +420,11 @@ stat_them () {
       < /dev/null ssh -q $RCONN "md5sum $RABSP && echo '========================' ;  ls -lha $RABSP --time-style=+'%Y%m%d_%H%M' &&  echo ======================== ;  stat $RABSP " >> ${FOUT}
   done
   
-  ${TRM} "less ${FOUT}"
-}
-XXXstat_them () {
-  local -r RDIR="$1"
-  local -r ARG1="$2"
-  local -r BUFF1=$(mktemp "/tmp/${TMPFX}.XXXXXX")
-  local -r BUFF2=$(mktemp "/tmp/${TMPFX}.XXXXXX")
-  echo RDIR is ["$RDIR"]
-  echo ARG1 is ["$ARG1"]
-  local -r RABSP=$(printf "${RDIR}/%s\n" $ARG1 | sed 's,/\./,/,')
-  ssh -q $RCONN "md5sum $RABSP && echo '========================' ;  ls -lha $RABSP --time-style=+'%Y%m%d_%H%M' &&  echo ======================== ;  stat $RABSP " > ${BUFF2}
-  ${TRM} "less ${BUFF2}"
+  # ${TRM} "less ${FOUT}"
+
+  LTERM=$TRM
+  [ "$TMUX" ] && LTERM=$TTERM
+  ${LTERM} "less ${FOUT}"
 }
 
     
@@ -436,6 +435,7 @@ grab_them () {
   local -r FTMP=$(t0b)
   local -r FTMP2=$(t0b)
   local -r FOUT=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  local LTERM
   # trim meta info on the left, all cols till delimiter
   trimmeta $FIN $FTMP
   #cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
@@ -453,7 +453,9 @@ grab_them () {
   echo "===================================" >>$FOUT
   unzip -l ${LZIPF} >>$FOUT
 
-  ${TRM} "less ${FOUT}"
+  LTERM=$TRM
+  [ "$TMUX" ] && LTERM=$TTERM
+  ${LTERM} "less ${FOUT}"
 }
 
 act_menu () {
