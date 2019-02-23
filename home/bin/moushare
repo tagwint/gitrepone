@@ -1,4 +1,4 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
 SHARENAME=${1?"Specify share name"}
 MOUNTP=${2:-/mnt/LNB/$SHARENAME}
 [ -d $MOUNTP ] || mkdir -p $MOUNTP || { echo Could not create  mount point in $MOUNTP; exit 1;  }
