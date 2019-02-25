@@ -1,5 +1,6 @@
 # functions gathered here to be sourced at once
 # vim: ft=sh
+# =========
 
 # svn wrapper to not keep password savedd
 function svu ()
