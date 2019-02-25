@@ -51,6 +51,12 @@ function svu ()
     _serv=${_wcserv}
   fi
 
+  # both  wrk and url relate to the same server
+  if [[ "${_wcserv:-NOWCSVR}" == "${_urlserv:-NOURLSVR}" ]]
+  then 
+    _serv=${_wcserv}
+  fi
+
   # both wrk copy and url are there but mismatch
   if [[ ! "${_wcserv:-NOWCSVR}" == "NOWCSVR" ]] && [[ ! "${_urlserv:-NOURLSVR}" == "NOURLSVR" ]] && [[ ! ${_wcserv} == ${_urlserv} ]]
   then
