@@ -119,6 +119,12 @@ function vxyn ()
 # 0 means yes (success), 1 - no
 } 
 
+vagbkindex () {
+  local _VIBD=~/.bak/vagrant_machine_index
+  [[ -d ${_VIBD} ]] || mkdir ${_VIBD}
+  jq . ~/.vagrant.d/data/machine-index/index >${_VIBD}/index_$(date +"%Y-%m-%d_%H%M%S")
+}
+
 vagcd () {
   local sel
   sel=$(vagrant global-status | grep '^.......  ' | grep -v '^id '|fzf|awk '{print $NF}')
@@ -196,4 +202,31 @@ lxa () {
   local sel
   sel=$(sudo lxc-ls -f | grep ' RUNNIN' | fzf | awk '{print $1}')
   [[ -n "$sel" ]] && sudo lxc-attach -n "$sel" 
+}
+
+cxc () {
+  export CXX_BOXNAME="magneticone/centos-7"
+  export CXX_DISTKEY=lco
+  export CXX_HOSTNAME=${2}
+  cxx $*
+  unset $(env |grep CXX_|sed 's/=.*$//')
+}
+cxf () {
+  export CXX_BOXNAME="godfryd/lxc-fedora-29"
+  export CXX_DISTKEY=lfc
+  export CXX_HOSTNAME=${2}
+  # CXX_NWPFX=${CXX_NWPFX:-${VXMOSTNW:-${CXX_DEFAULTNWPFX}}}
+  cxx $*
+  unset $(env |grep CXX_|sed 's/=.*$//')
+}
+
+vagls () {
+  vagrant global-status $* | grep '^.......  ' | grep -v '^id '
+}
+
+vagdestroy () {
+  local id path
+  read -r id path  <<<$(vagrant global-status | grep '^.......  ' | grep -v '^id '|fzf|awk '{print $1,$NF}')
+  [[ -n "$id" ]] && vagrant destroy "$id"  
+  [[ -n "$path" ]] && vxyn "Sure to remove $path?" && rm -rf "$path"
 }
