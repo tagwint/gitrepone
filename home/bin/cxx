@@ -117,6 +117,7 @@ echo 'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAn9xxCkt0/rGNaAchLaufVoIcqMvEOFHjELOr9F
 chmod 0700 /root/.ssh
 chmod 0600 /root/.ssh/authorized_keys
 
+sudo chmod 4755 /bin/ping ## fix ping not permitted inside container
 # yum clean all
 # yum -y update 
 # yum -y install wget epel-release 
