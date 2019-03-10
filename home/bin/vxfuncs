@@ -24,10 +24,10 @@ function svu ()
 
   # test if the argument contains some http* url
   # echo "Checking arg against valid url ..."
-  [[ "$@" =~ http.*://([^/]*)/.*$ ]] && _urlserv=${BASH_REMATCH[1]}
+  [[ "$*" =~ http.*://([^/]*)/.*$ ]] && _urlserv=${BASH_REMATCH[1]}
   if [[ -z ${_urlserv} ]] # no server in args 
   then 
-    echo "INFO: No server name in ${@}"
+    echo "INFO: No server name in" "${@}"
   else 
     echo "INFO: Server name ${_urlserv} detected "
   fi
@@ -59,7 +59,7 @@ function svu ()
   fi
 
   # both wrk copy and url are there but mismatch
-  if [[ ! "${_wcserv:-NOWCSVR}" == "NOWCSVR" ]] && [[ ! "${_urlserv:-NOURLSVR}" == "NOURLSVR" ]] && [[ ! ${_wcserv} == ${_urlserv} ]]
+  if [[ ! "${_wcserv:-NOWCSVR}" == "NOWCSVR" ]] && [[ ! "${_urlserv:-NOURLSVR}" == "NOURLSVR" ]] && [[ ! "${_wcserv}" == "${_urlserv}" ]]
   then
     echo "ERROR: Working copy mismatches requested url:"
     echo "WC:${_wcserv}"
@@ -122,7 +122,7 @@ function vxyn ()
 vagbkindex () {
   local _VIBD=~/.bak/vagrant_machine_index
   [[ -d ${_VIBD} ]] || mkdir ${_VIBD}
-  jq . ~/.vagrant.d/data/machine-index/index >${_VIBD}/index_$(date +"%Y-%m-%d_%H%M%S")
+  jq . ~/.vagrant.d/data/machine-index/index >"${_VIBD}/index_$(date +'%Y-%m-%d_%H%M%S')"
 }
 
 vagcd () {
@@ -208,7 +208,7 @@ cxc () {
   export CXX_BOXNAME="magneticone/centos-7"
   export CXX_DISTKEY=lco
   export CXX_HOSTNAME=${2}
-  cxx $*
+  cxx "$@"
   unset $(env |grep CXX_|sed 's/=.*$//')
 }
 cxf () {
@@ -216,17 +216,17 @@ cxf () {
   export CXX_DISTKEY=lfc
   export CXX_HOSTNAME=${2}
   # CXX_NWPFX=${CXX_NWPFX:-${VXMOSTNW:-${CXX_DEFAULTNWPFX}}}
-  cxx $*
+  cxx "$@"
   unset $(env |grep CXX_|sed 's/=.*$//')
 }
 
 vagls () {
-  vagrant global-status $* | grep '^.......  ' | grep -v '^id '
+  vagrant global-status "$@" | grep '^.......  ' | grep -v '^id '
 }
 
 vagdestroy () {
   local id path
-  read -r id path  <<<$(vagrant global-status | grep '^.......  ' | grep -v '^id '|fzf|awk '{print $1,$NF}')
+  read -r id path  <<<"$(vagrant global-status | grep '^.......  ' | grep -v '^id '|fzf|awk '{print $1,$NF}')"
   [[ -n "$id" ]] && vagrant destroy "$id"  
   [[ -n "$path" ]] && vxyn "Sure to remove $path?" && rm -rf "$path"
 }
