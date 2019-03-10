@@ -31,7 +31,7 @@ CXX_BOXNAME=${CXX_BOXNAME:-${CXX_DEFAULTBOXNAME}}
 CXX_NWPFX=${CXX_NWPFX:-${VXMOSTNW:-${CXX_DEFAULTNWPFX}}}
 CXX_DISTKEY=${CXX_DISTKEY:-${CXX_DEFAULTDISTKEY}}
 
-CXX_BRIDGE=most${CXX_NWPFX//./_}
+CXX_BRIDGE=most${CXX_NWPFX//./_} # pipework script may detect bridge based on the adapter name starting with br 
 CXX_HNPFX=${CXX_DISTKEY}$(echo $CXX_NWPFX | awk -F. '{ print $(NF) }')
 IPT=$(( INUM + 100 ))
 CXX_HOSTNAME=${CXX_HOSTNAME:-${CXX_HNPFX}${IPT}}
