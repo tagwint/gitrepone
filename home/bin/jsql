@@ -17,7 +17,11 @@ if [ ! -z "${CST}" ] ; then
   H=${BASH_REMATCH[3]}
   S=${BASH_REMATCH[4]}
   echo Connection as ${U} to ${H}/${S}
-  echo ConnectionUserName=$U>$PP
+  if [[ "${U}" == "sys" ]] ; then
+    echo ConnectionUserName=$U as sysdba>$PP
+  else 
+    echo ConnectionUserName=$U>$PP
+  fi 
   echo ConnectionPassword=$P>>$PP
   echo ConnectionURL=jdbc:oracle:thin:@//${H}/$S>>$PP
   echo '!set silent true'>>$T
