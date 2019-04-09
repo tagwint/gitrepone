@@ -1,0 +1,27 @@
+#!/bin/bash
+
+L=$(basename "$1")
+R=$(basename "$2")
+
+TMPFX="NCC_${RANDOM}"
+
+LL=$(mktemp "/tmp/${TMPFX}.XXX")${L}
+RR=$(mktemp "/tmp/${TMPFX}.XXX")${R}
+
+cat $L | uncolor | sed 's|ansible-local-.*/|NORMALIZED/|g'>"$LL"
+cat $R | uncolor | sed 's|ansible-local-.*/|NORMALIZED/|g'>"$RR"
+trap 'rm /tmp/${TMPFX}*' exit
+
+TITLE="${1} versus ${2}"
+
+if [ -n "$DISPLAY" ] 
+then 
+  # TODO in a new window ?
+  # tmux new-window -n  "svndiff"  /usr/bin/vimdiff -c "set title titlestring=$TITLE" ${7} ${6}
+  # <<< this works well for diff working copy, but fails in comparing revisions like r17:14
+  # apparently wiping out tmp files before they get into vimdiff
+  meld "${LL}" "${RR}"
+else 
+  /usr/bin/vimdiff -i /tmp/idontcare -c "set title titlestring=\"$TITLE\"" "${LL}" "${RR}"
+fi
+
