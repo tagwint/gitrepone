@@ -159,7 +159,7 @@ sudo sed -i -e '/^...BOFVAGRANT/r etchostsinsert' /etc/hosts
 #          g
 #          N
 #      }" ~/.ssh/config
-# export VAGRANT_LOG=DEBUG
+export VAGRANT_LOG=DEBUG
 vagrant up --provider=lxc && echo $CXX_HOSTNAME has been prepared
 # ls -lha
 ./attachshare.sh
