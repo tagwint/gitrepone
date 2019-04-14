@@ -8,8 +8,13 @@ TMPFX="NCC_${RANDOM}"
 LL=$(mktemp "/tmp/${TMPFX}.XXX")${L}
 RR=$(mktemp "/tmp/${TMPFX}.XXX")${R}
 
-cat $1 | uncolor | sed 's|ansible-local-.*/|NORMALIZED/|g'>"$LL"
-cat $2 | uncolor | sed 's|ansible-local-.*/|NORMALIZED/|g'>"$RR"
+
+# for ansible playbook output, elimnate differense of natural reasons
+# - ansible tmp folder names
+# - number of stars in dividers like TASK [name] **************
+#    since it differ depending on terminal with atm of run
+cat $1 | uncolor | sed 's|ansible-local-.*/|NORMALIZED/|g;s/ \*\*\*\**$//g'>"$LL"
+cat $2 | uncolor | sed 's|ansible-local-.*/|NORMALIZED/|g;s/ \*\*\*\**$//g'>"$RR"
 trap 'rm /tmp/${TMPFX}*' exit
 
 TITLE="${1} versus ${2}"
