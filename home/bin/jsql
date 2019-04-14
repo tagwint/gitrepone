@@ -34,14 +34,17 @@ if [ ! -z "${CST}" ] ; then
  fi
 fi
 
+JV_DV=j8d7
+# JV_DV=j8d14
 
 
 if [ ! -t 0 ] ; then 
  cat -  >> $T
- cat $T | j8d7  2>&1 | egrep -v '^0:|^sqlline> !|Error: READ_COMMITTED and SERIALIZABLE are the only valid transaction levels'
+ cat $T | $JV_DV  2>&1 | egrep -v '^0:|^sqlline> !|Error: READ_COMMITTED and SERIALIZABLE are the only valid transaction levels'
  echo Connection as ${U} to ${H}/${S}
 else
  echo Use '!connect' jdbc:oracle:thin:@//${H}/${S} $U '<pwd>'
- exec j8d7
+ # exec j8d7
+ exec $JV_DV
 fi
 # cat $T | j8d7 2>&1 |  egrep -v '^0:|^sqlline> !'
