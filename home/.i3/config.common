@@ -205,7 +205,7 @@ bindcode $mod+$comma_code exec ~/bin/vkmbenter
 bindcode $mod+Shift+$comma_code exec ~/bin/rdpwdenter
 
 # clipboard management, greenclip daemon should be started earlier
-bindcode $mod+Shift+$a_code exec --no-startup-id rofi -lines 40 -modi "clipboard:greenclip print" -show clipboard -run-command '{cmd}'
+bindcode $mod+Shift+$a_code exec --no-startup-id rofi -lines 30 -modi "clipboard:greenclip print" -show clipboard -run-command '{cmd}'
 # locking stuff
 #
 
