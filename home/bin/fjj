@@ -543,7 +543,7 @@ t0b () {
 }
 
 
-export -f  hbin_them handle_action xaste stat_them grab_them dpf act_menu \
+export -f  hbin_them handle_action xaste stat_them grab_them dpf act_menu preview
            edit_vim edit_emacs view_less tst_them ts2_them t0b trimmeta callshell callRCshell callvifm sel2clipboard
 
 
