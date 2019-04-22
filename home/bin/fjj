@@ -598,7 +598,7 @@ ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR |
 	 --bind "alt-j:jump" \
          --preview "preview {}"\
          --preview-window down:55% \
-         --bind "alt-t:toggle-preview"
+         --bind "alt-t:toggle-preview" \
 	 --bind "f2:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; act_menu $PRIMB )" \
 	 --bind "alt-space:execute-multi(printf \"%s\n\" {}>$PRIMB  ; act_menu $PRIMB )" \
 	 --bind "f3:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; view_less $PRIMB )" \

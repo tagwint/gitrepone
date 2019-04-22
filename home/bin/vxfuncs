@@ -230,3 +230,31 @@ vagdestroy () {
   [[ -n "$id" ]] && vagrant destroy "$id"  
   [[ -n "$path" ]] && vxyn "Sure to remove $path?" && rm -rf "$path"
 }
+
+
+hudok () {
+  local TOKEN CHAT_ID URL MESSAGE
+  TOKEN=$(KRPWDE ${CORPTGBOT}) 
+  CHAT_ID=${CORPTGCHATID}
+  MESSAGE="$*"
+  URL="https://api.telegram.org/bot$TOKEN/sendMessage"
+  curl -s -X POST $URL -d chat_id=$CHAT_ID -d text="$MESSAGE"
+}
+hudok2 () {
+  local TOKEN CHAT_ID URL MESSAGE
+  TOKEN=$(KRPWDE ${CORPTGBOT}) 
+  CHAT_ID=363698169
+  MESSAGE="$*"
+  URL="https://api.telegram.org/bot$TOKEN/sendMessage"
+  curl -s -X POST $URL -d chat_id=$CHAT_ID -d text="$MESSAGE"
+}
+
+
+tgsend () {
+ local f u
+ f=$(mktemp);  cat - >$f 
+ local URL=${1:-$HBLOGNET}
+ u=$(cat $f)
+ hudok "$u" 
+ rm -f $f
+}

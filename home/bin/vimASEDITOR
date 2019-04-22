@@ -13,10 +13,18 @@ if [[ "${FC_TMPY:-NO}" == "YES" ]]; then
   # The user has finished editing the temporary file.
   # It's time to evaluate the contents.
   source "$1"
+  nlines=$(cat "$1"|sed '/^$/d'|wc -l )
+  if [[ "$nlines" -ge 1 ]] ; then
+    # NOT only for one-liners, keep it in history too
+    cat "$1"|sed '/^$/d' >>~/.histkeep2
+  fi 
 
   # Save current process ID for the subshell below.
+  # echo Saving PID=$PID >&2
   pid=$PID
-
+  ## this seem to be wrong/unneeded as PID did not gets defined
+  ## anywhere, the SO from above link might mean $$ instead
+  ## 
   # The subshell helps to suppress the `Terminated` message.
   ( kill $pid >/dev/null 2>&1 )
 fi
