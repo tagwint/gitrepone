@@ -511,7 +511,7 @@ callshell () {
   #${TRM} "ssh -t ${RCONN} $RSHEV ; cd \$(dirname ${RF}) ; exec \${SHELL} "
   LTERM=$TRM
   [ $TMUX ] && LTERM=$TTERM
-  ${LTERM} "ssh -q -tt ${RCONN} \" $RSHEV ; cd \$(dirname ${RF}) ; { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }; \${SHELL}  \" "
+  ${LTERM} "ssh -q -tt ${RCONN} \" $RSHEV ; cd \$(dirname ${RF}) ; { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }; \\\$SHELL  \" "
 }
 
 callRCshell () {
