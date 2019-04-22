@@ -340,6 +340,24 @@ edit_emacs () {
   done
 }
 
+preview () {
+  local FFN RURL
+  FFN=$RDIR/$(echo "$*" | awk '{ print $NF }' | sed 's/^...//g')
+  RURL=${RCONN}:/$FFN
+  echo RSYNC: $RURL 
+  ssh -q $RCONN  "export MIME=\$(file -ib $FFN) ; case \$MIME  in
+	text*|application/xml*)
+	  ( head -n 4 $FFN ; echo \<\< Head\[  .. skipped in preview  .......... \]Tail \>\> ;  tail -n 4 $FFN ) 
+	;;
+	application/zip*)
+           unzip -l "${FFN}" | head -n 8  ;echo ...
+	;;
+	*) 
+          echo mimie is \$MIME , do not know how to preview
+	;;
+	esac
+  "
+}
 
 view_less () {
   local -r FIN="$1"
@@ -578,6 +596,9 @@ ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR |
 	 --bind "alt-s:select-all" \
 	 --bind "alt-d:deselect-all" \
 	 --bind "alt-j:jump" \
+         --preview "preview {}"\
+         --preview-window down:55% \
+         --bind="alt-t:toggle-preview"
 	 --bind "f2:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; act_menu $PRIMB )" \
 	 --bind "alt-space:execute-multi(printf \"%s\n\" {}>$PRIMB  ; act_menu $PRIMB )" \
 	 --bind "f3:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; view_less $PRIMB )" \
