@@ -352,8 +352,12 @@ preview () {
 	application/zip*)
            unzip -l "${FFN}" | head -n 8  ;echo ...
 	;;
+        inode/x-empty*)
+           echo EMPTY FILE
+	;;
 	*) 
-          echo mimie is \$MIME , do not know how to preview
+          echo mimie is \$MIME , do not really know how to preview, using hexdump
+	  ( hexdump -C "${FFN}"| head -n 5 ; echo \<\< Head\[  .. skipped in preview  .......... \]Tail \>\> ;hexdump -C "${FFN}"| tail -n 4 ) 
 	;;
 	esac
   "
