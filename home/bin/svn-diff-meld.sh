@@ -22,25 +22,29 @@ RFile=${6}
 # echo "$@"
 # echo ---------------
 
+interm () {
+ TITLE="${LLabel} - ${RLabel}"
+ TITLE=$(echo ${TITLE//(/\\(})
+ TITLE=$(echo ${TITLE//)/\\)})
+ TITLE=$(echo ${TITLE// /\\ })
+ TITLE=$(echo ${TITLE//-/\\-})
+ /usr/bin/vimdiff -c "set title titlestring=$TITLE" ${LFile} ${RFile}
+}
+
+
+inGUI () {
+ meld --label="$LLabel"    "$LFile"   \
+      --label="$RLabel"    "$RFile"   
+}
+
 if [[ ! "$SSH_CONNECTION" || -n "$DISPLAY" ]]
 then 
-	meld --label="$LLabel"    "$LFile"   \
-	     --label="$RLabel"    "$RFile"   
+  if [ "$TMUX" ] 
+  then
+   interm
+  else
+   inGUI
+  fi
 else
-	TITLE="${LLabel} - ${RLabel}"
-	TITLE=$(echo ${TITLE//(/\\(})
-	TITLE=$(echo ${TITLE//)/\\)})
-	TITLE=$(echo ${TITLE// /\\ })
-	TITLE=$(echo ${TITLE//-/\\-})
-
-	if [ "$TMUX" ] 
-	then 
-	  # TODO in a new window ?
-	  # tmux new-window -n  "svndiff"  /usr/bin/vimdiff -c "set title titlestring=$TITLE" ${7} ${6}
-	  # <<< this works well for diff working copy, but fails in comparing revisions like r17:14
-	  # apparently wiping out tmp files before they get into vimdiff
-	  /usr/bin/vimdiff -c "set title titlestring=$TITLE" ${LFile} ${RFile}
-	else 
-	  /usr/bin/vimdiff -c "set title titlestring=$TITLE" ${LFile} ${RFile}
-	fi
+  interm
 fi
