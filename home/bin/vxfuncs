@@ -17,9 +17,9 @@ function svu ()
   svn info >/dev/null 2>&1 &&  _wcserv=$(svn info | grep ^URL | sed 's|^.*http.*://||;s|/.*$||g' 2>/dev/null)
   if [[ -z ${_wcserv} ]] # no, it does not look like a wrk copy of some repo
   then 
-    echo "INFO: No working copy here, in $(pwd)"
+    >&2 echo "INFO: No working copy here, in $(pwd)" 
   else 
-    echo "INFO: Working copy from ${_wcserv} detected "
+    >&2 echo "INFO: Working copy from ${_wcserv} detected "
   fi
 
   # test if the argument contains some http* url
@@ -27,16 +27,16 @@ function svu ()
   [[ "$*" =~ http.*://([^/]*)/.*$ ]] && _urlserv=${BASH_REMATCH[1]}
   if [[ -z ${_urlserv} ]] # no server in args 
   then 
-    echo "INFO: No server name in" "${@}"
+    >&2 echo "INFO: No server name in" "${@}"
   else 
-    echo "INFO: Server name ${_urlserv} detected "
+    >&2 echo "INFO: Server name ${_urlserv} detected "
   fi
 
   # none of wrk copy and url
   if [[ "${_wcserv:-NOWCSVR}" == "NOWCSVR" ]] && [[ "${_urlserv:-NOURLSVR}" == "NOURLSVR" ]]
   then 
-    echo "ERROR: Neither a working copy is here: $(pwd)"
-    echo "_____: Nor url provided in args"
+    >&2 echo "ERROR: Neither a working copy is here: $(pwd)"
+    >&2 echo "_____: Nor url provided in args"
     return 1;
   fi
 
@@ -61,9 +61,9 @@ function svu ()
   # both wrk copy and url are there but mismatch
   if [[ ! "${_wcserv:-NOWCSVR}" == "NOWCSVR" ]] && [[ ! "${_urlserv:-NOURLSVR}" == "NOURLSVR" ]] && [[ ! "${_wcserv}" == "${_urlserv}" ]]
   then
-    echo "ERROR: Working copy mismatches requested url:"
-    echo "WC:${_wcserv}"
-    echo "URL:${_urlserv} "
+    >&2 echo "ERROR: Working copy mismatches requested url:"
+    >&2 echo "WC:${_wcserv}"
+    >&2 echo "URL:${_urlserv} "
     return 1;
   fi
 
@@ -76,21 +76,21 @@ function svu ()
           _pw=$(KRPWDE githubsvn) && _auth="--password  ${_pw} " 
       ;;
       NONE) # should not get here
-         echo "ERROR: Neither working copy here, nor an url in args, nothing doing " ; return 1 
+         >&2 echo "ERROR: Neither working copy here, nor an url in args, nothing doing " ; return 1 
       ;;
       *)
-         echo "INFO: Unknown server for working copy, failing back to default svn"
+         >&2 echo "INFO: Unknown server for working copy, failing back to default svn"
           
   esac 
-  echo "INFO: Server to deal with detected: ${_serv}"
+  >&2 echo "INFO: Server to deal with detected: ${_serv}"
   _arg="$@"
   # echo ARG: ${_arg} 
-  echo -n "INFO: Args passed:"; printf '[%q] ' "$@"
-  echo
-  echo =========
+  >&2 echo -n "INFO: Args passed:"; >&2 printf '[%q] ' "$@"
+  >&2 echo
+  >&2 echo =========
   if [[ ! -z "${_arg}" ]] 
   then
-    [[ "${_auth:-none}" == "none" ]] &&  { echo "WARN: Auth for $_serv could not be obtained"; }
+    [[ "${_auth:-none}" == "none" ]] &&  { >&2 echo "WARN: Auth for $_serv could not be obtained"; }
     svn "$@"  ${_auth}
   else
     svn "$@"
@@ -249,3 +249,5 @@ tgsend () {
  hudok "$u" 
  rm -f $f
 }
+
+# export -f svu
