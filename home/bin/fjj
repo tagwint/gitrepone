@@ -340,14 +340,26 @@ edit_emacs () {
   done
 }
 
+# printf '\u001b[40m A \u001b[41m B \u001b[42m C \u001b[43m D \u001b[0m  VVVVV \n'
 preview () {
   local FFN RURL
   FFN=$RDIR/$(echo "$*" | awk '{ print $NF }' | sed 's/^...//g')
   RURL=${RCONN}:/$FFN
-  echo RSYNC: $RURL 
+  echo RSYNCable: $RURL 
+  echo 
+  # ssh -q $RCONN  "export MIME=\$(file -ib $FFN) ; case \$MIME  in
   ssh -q $RCONN  "export MIME=\$(file -ib $FFN) ; case \$MIME  in
 	text*|application/xml*)
-	  ( head -n 4 $FFN ; echo \<\< Head\[  .. skipped in preview  .......... \]Tail \>\> ;  tail -n 4 $FFN ) 
+          NOL=\$(cat $FFN|wc -l); echo Lines: \$NOL 
+          if [[ $FFN =~ ^.*/log/.*$|^.*/logs/.*$ ]] ;then
+	    ( ( tail -n 4 $FFN | tac ) ; echo --------------- \<\< TAIL reversed, ERRORs in reverse order below:; ( cat -n $FFN | egrep 'ERROR' | tac ) ;echo  .. skipped in preview  ........; echo ----------- HEAD \>\> ;  head -n 4 $FFN ) 
+          else
+            if [[ \$NOL -lt 800 ]] ; then 
+              cat $FFN
+            else
+	      ( ( head -n 20 $FFN | tac ) ; echo --------------- \<\< HEAD  .. skipped in preview  ........ Tail \>\> ;  tail -n 14 $FFN ) 
+            fi 
+          fi 
 	;;
 	application/zip*)
            unzip -l "${FFN}" | head -n 8  ;echo ...
@@ -593,7 +605,7 @@ ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR |
          fzf -m  \
 	 --color=dark \
 	 --print-query \
-	 --header="view:f3 edit:f4 zgrab:f5 stat:f6 hbin:f7 vfm:alt-f shell:M-m cp2clip:M-(i|r|v)" \
+	 --header="view:f3 edit:f4 zgrab:f5 stat:f6 hbin:f7 vfm:alt-f shell:M-m cp2clip:M-(i|r|v) alt-t:toggle_preview" \
 	 --prompt="${RCONN}[${RDIR}]>" \
 	 --expect="alt-h,f8,f9,alt-g" \
 	 --nth=-1 \
