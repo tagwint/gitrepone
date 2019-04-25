@@ -341,7 +341,7 @@ edit_emacs () {
 }
 
 # printf '\u001b[40m A \u001b[41m B \u001b[42m C \u001b[43m D \u001b[0m  VVVVV \n'
-preview () {
+remote_preview () {
   local FFN RURL
   FFN=$RDIR/$(echo "$*" | awk '{ print $NF }' | sed 's/^...//g')
   RURL=${RCONN}:/$FFN
@@ -559,7 +559,7 @@ t0b () {
 }
 
 
-export -f  hbin_them handle_action xaste stat_them grab_them dpf act_menu preview \
+export -f  hbin_them handle_action xaste stat_them grab_them dpf act_menu remote_preview \
            edit_vim edit_emacs view_less tst_them ts2_them t0b trimmeta callshell callRCshell callvifm sel2clipboard
 
 
@@ -612,7 +612,7 @@ ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR |
 	 --bind "alt-s:select-all" \
 	 --bind "alt-d:deselect-all" \
 	 --bind "alt-j:jump" \
-         --preview "preview {}"\
+         --preview "remote_preview {}"\
          --preview-window down:55% \
          --bind "alt-t:toggle-preview" \
 	 --bind "f2:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; act_menu $PRIMB )" \
