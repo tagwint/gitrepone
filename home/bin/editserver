@@ -3,7 +3,10 @@ estmp=/tmp/editserver
 selfdir=$(dirname $0)
 mkdir -p $estmp
 export EDITSERVER_TMP=$estmp
-#export EDITSERVER_BLOCKING=1
-#export EDITSERVER_CMD='terminator -e "vim %s"'
+# export EDITSERVER_CMD='terminator -e "vim %s"'
 export EDITSERVER_CMD='xfce4-terminal --command "vim -i /tmp/ikeepviminfo %s"'
-plackup -s Starman -p ${1:-9292} --host 127.0.0.1 -a ${selfdir}/editserver.psgi
+# export EDITSERVER_CMD='st -e vim -i /tmp/ikeepviminfo %s'
+# export EDITSERVER_CMD='gvim -i /tmp/ikeepviminfo -f %s'
+# export EDITSERVER_CMD='gedit -f %s'
+# export EDITSERVER_CMD='gnome-terminal --command "vim -i /tmp/ikeepviminfo %s"'
+plackup -s Starman --workers 2 -p ${1:-9292} --host 127.0.0.1 -a ${selfdir}/editserver.psgi
