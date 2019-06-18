@@ -529,12 +529,9 @@ ts2_them () {
 }
 
 callshell () {
-  local -r RF=${RDIR%/}/$(echo "$1" | sed  "s/^.*${FZFDLM}//g;s,^./,,g")
+  local -r RF=${RDIR%/}/
   local LTERM
   echo Remotefile ot run shell around: $RF
-  ### scp -q $LINCVIMINT_SRC $RCONN:$RINCVIMINT_SRC
-  ## pushd $SSHVIMRP && tar zc . -C $(dirname $LSHELL_AUXRC) $(basename $LSHELL_AUXRC)  | ssh $RCONN "mkdir -p $RVIMRP ; tar zxf - -C $RVIMRP " ; popd
-  #${TRM} "ssh -t ${RCONN} $RSHEV ; cd \$(dirname ${RF}) ; exec \${SHELL} "
   LTERM=$TRM
   [ $TMUX ] && LTERM=$TTERM
   ${LTERM} "ssh -q -tt ${RCONN} \" $RSHEV ; cd \$(dirname ${RF}) ; { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }; \\\$SHELL  \" "
