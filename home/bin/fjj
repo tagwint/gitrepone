@@ -319,7 +319,7 @@ edit_vim () {
       (( VID++ ))
       export FPANETIT="scp://$RCONN//$RABSP"
       export FWINDTIT="E${VID}:$(basename $RABSP)"
-      ${LTERM}  " vimx \"scp://$RCONN//$RABSP\" -c 'colorscheme torte' -c 'set title' "
+      ${LTERM}  " vimx \"scp://$RCONN//$RABSP\" -c 'set title' "
   done
 }
 
