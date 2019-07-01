@@ -250,4 +250,4 @@ tgsend () {
  rm -f $f
 }
 
-# export -f svu
+ export -f svu
