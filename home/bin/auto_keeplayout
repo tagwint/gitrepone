@@ -1,0 +1,13 @@
+#!/bin/bash 
+# a tmux session with running editserver to be created at startup
+tmux new-session -d -s KEEPLAY
+# sleep enough for some win apeears
+# TODO: avoid this sleep, do senisble check intead
+# if you do not log on dureing this value, script will fail
+# as no acitve win present
+sleep 38
+tmux send-keys -t KEEPLAY /usr/bin/env Space python Space -V 2>&1 C-m
+tmux send-keys -t KEEPLAY ~/.i3/i3keepwinlayout.py 2>&1 C-m
+#tmux detach -s  EDSER
+
+
