@@ -6,7 +6,7 @@ PP=/tmp/aPPa
 T=/tmp/aXXa
 echo '!set headerInterval 9999'>$T
 echo '!set maxwidth 500'>>$T
-echo '!set silent true'>>$T
+# echo '!set silent true'>>$T
 echo '!set fastconnect true'>>$T
 
 if [ ! -z "${CST}" ] ; then
@@ -16,7 +16,7 @@ if [ ! -z "${CST}" ] ; then
   P=${BASH_REMATCH[2]}
   H=${BASH_REMATCH[3]}
   S=${BASH_REMATCH[4]}
-  echo Connection as ${U} to ${H}/${S}
+  echo 'Connecting as ['${U}/xxx@${H}/${S}']'
   if [[ "${U}" == "sys" ]] ; then
     echo ConnectionUserName=$U as sysdba>$PP
   else 
@@ -24,7 +24,7 @@ if [ ! -z "${CST}" ] ; then
   fi 
   echo ConnectionPassword=$P>>$PP
   echo ConnectionURL=jdbc:oracle:thin:@//${H}/$S>>$PP
-  echo '!set silent true'>>$T
+  # echo '!set silent true'>>$T
   echo '!properties '${PP}>>$T
 
  else
@@ -40,8 +40,10 @@ JV_DV=j8d7
 
 if [ ! -t 0 ] ; then 
  cat -  >> $T
- cat $T | tee /tmp/lastjsql | $JV_DV  2>&1 | egrep -v '^0:|^sqlline> !|Error: READ_COMMITTED and SERIALIZABLE are the only valid transaction levels'
- echo Connection as ${U} to ${H}/${S}
+ cat $T | tee /tmp/lastjsql | 
+   $JV_DV  2>&1 | 
+   egrep -v '^Driver|^Autocommit|^Connecting to|^Connected to|^0:|^sqlline> !|^sqlline vers|Error: READ_COMMITTED and SERIALIZABLE are the only valid transaction levels'
+ echo '<<< used connection: ['${U}/xxx@${H}/${S}']'
 else
  echo Use '!connect' jdbc:oracle:thin:@//${H}/${S} $U '<pwd>'
  # exec j8d7
