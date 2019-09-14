@@ -344,7 +344,7 @@ jrr_preview () {
   local FFN RURL
   FFN=$(echo "$*" | awk '{ print $1 }')
   echo 
-  ssh -q $RCONN  "${SUCMD:-sudo} cat /proc/$FFN/environ | tr '\0' '\n' | sort  "
+  ssh -q $RCONN  "${SUCMD:-sudo} cat /proc/$FFN/environ | tr '\0' '\n' | sort ; ${SUCMD:-sudo} lsof -Pan -p $FFN -i "
 }
 
 jrr_view_htop () {
@@ -368,21 +368,33 @@ jrr_view_less () {
   PID=$(echo "$*" | awk '{ print $1 }')
   LTERM=$TRM
   RJTMP=${RVIMRP}/java_${PID}
+  RJTMP=/tmp/java_${PID}
   [ "$TMUX" ] && LTERM=$TTERM
   if [[ $COMM =~ .*/java$ ]] ; then
     JINFOBIN=$(echo ${COMM} | sed 's/java$/jinfo/g')
     export FPANETIT="PID:$PID@$RCONN"
     export FWINDTIT="PID:$PID@$RCONN"
-    ${LTERM}  "ssh -q -tt $RCONN \" $RSHEV
+    ssh -q -tt $RCONN " $RSHEV
                { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }
                { ${SUCMD:-sudo} $JINFOBIN $PID 2>&1  | 
                  sed '/\.path /s/:/\n >/g' |
                  sed '/VM Flags:/,$ s/ /\n /g'|
                  sed '/^Non-default VM flags:/s/ /\n >/g' |
-                 sed '/^Command line: /s/ /\n >/g' >${RJTMP} && less ${RJTMP} ; } || { echo Please read above, there must be some error msg ;read K; } \" "
-  else 
-    ${LTERM}  "ssh -q -tt $RCONN \" $RSHEV;  { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }; ${SUCMD:-sudo} cat /proc/$PID/environ | tr '\0' '\n' | grep -v '^LS_COLORS' |sort|less  || { echo Please read above, there must be some error msg ;read K; } \" "
+                 sed '/^Command line: /s/ /\n >/g' >${RJTMP} ; } || { echo Please read above, there must be some error msg ;read K; } "
   fi
+  ${LTERM}  "ssh -q -tt $RCONN \" $RSHEV;  
+             { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }
+             {   echo =================================================== $PID ENVIRONMENT 
+               { ${SUCMD:-sudo} cat /proc/$PID/environ | 
+                 tr '\0' '\n' | grep -v '^LS_COLORS' | sort  
+                 echo =================================================== $PID PORTS
+                 ${SUCMD:-sudo} lsof -Pan -p $PID -i ; } 
+                 { [ -f $RJTMP ] &&  {
+                 echo =================================================== $PID JINFO  
+                 cat $RJTMP 
+                 } 
+                 }
+                } | less || { echo Please read above, there must be some error msg ;read K; } \" "
 }
 
 view_less () {
