@@ -5,7 +5,7 @@ CST=$1
 PP=/tmp/aPPa
 T=/tmp/aXXa
 echo '!set headerInterval 9999'>$T
-echo '!set maxwidth 500'>>$T
+echo '!set maxwidth 2500'>>$T
 # echo '!set silent true'>>$T
 echo '!set fastconnect true'>>$T
 
