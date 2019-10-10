@@ -15,7 +15,15 @@ if [ ! -z "${CST}" ] ; then
   U=${BASH_REMATCH[1]}
   P=${BASH_REMATCH[2]}
   H=${BASH_REMATCH[3]}
-  S=${BASH_REMATCH[4]}
+  xS=${BASH_REMATCH[4]}
+  #if last match contains colon, connection considered postgres
+  if [[ ${xS} =~ ^(.+)\:(.*)$ ]] ; then
+    S=${BASH_REMATCH[1]}
+    DESCR='jdbc:postgresql:'
+  else
+    DESCR='jdbc:oracle:thin:@'
+    S=$xS    
+  fi
   echo 'Connecting as ['${U}/xxx@${H}/${S}']'
   if [[ "${U}" == "sys" ]] ; then
     echo ConnectionUserName=$U as sysdba>$PP
@@ -23,7 +31,7 @@ if [ ! -z "${CST}" ] ; then
     echo ConnectionUserName=$U>$PP
   fi 
   echo ConnectionPassword=$P>>$PP
-  echo ConnectionURL=jdbc:oracle:thin:@//${H}/$S>>$PP
+  echo ConnectionURL=${DESCR}//${H}/$S>>$PP
   # echo '!set silent true'>>$T
   echo '!properties '${PP}>>$T
 
@@ -40,12 +48,14 @@ JV_DV=j8d7
 
 if [ ! -t 0 ] ; then 
  cat -  >> $T
- cat $T | tee /tmp/lastjsql | 
+ cat $T | tee -a /tmp/.lastjsql | 
    $JV_DV  2>&1 | 
    egrep -v '^Driver|^Autocommit|^Connecting to|^Connected to|^0:|^sqlline> !|^sqlline vers|Error: READ_COMMITTED and SERIALIZABLE are the only valid transaction levels'
  echo '<<< used connection: ['${U}/xxx@${H}/${S}']'
 else
- echo Use '!connect' jdbc:oracle:thin:@//${H}/${S} $U '<pwd>'
+ echo Use for ORA: '!connect' jdbc:oracle:thin:@//host:port/svcid  '<user> <pwd>'
+  
+ echo Use for PG: ' !connect' jdbc:postgresql://host:5432/dbname  '<user> <pwd>'
  # exec j8d7
  exec $JV_DV
 fi
