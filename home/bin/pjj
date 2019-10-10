@@ -387,6 +387,8 @@ jrr_view_less () {
              {   echo =================================================== $PID ENVIRONMENT 
                { ${SUCMD:-sudo} cat /proc/$PID/environ | 
                  tr '\0' '\n' | grep -v '^LS_COLORS' | sort  
+                 echo =================================================== $PID MEMORY
+                 ${SUCMD:-sudo} cat /proc/$PID/status  
                  echo =================================================== $PID PORTS
                  ${SUCMD:-sudo} lsof -Pan -p $PID -i ; } 
                  { [ -f $RJTMP ] &&  {
