@@ -128,6 +128,8 @@ exec --no-startup-id "~/bin/auto_keeplayout"
 exec --no-startup-id "~/bin/auto_editserver"
 exec --no-startup-id "~/bin/auto_greenclip"
 
+exec --no-startup-id xautolock -time 10 -locker '~/.i3/i3_autolock' 
+
 for_window [class="Xfce4-terminal"] floating enable
 for_window [class="xfce4-terminal"] floating enable
 for_window [class="Lxterminal"] floating enable
