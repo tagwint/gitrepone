@@ -71,6 +71,9 @@ function svu ()
       svn.${CORPDOMAIN})
           # _auth="--username ${CORPUSER} --password $(KRPWD ${CORPUSER}@${CORPDOMAIN}) " 
           _pw=$(KRPWDE ${CORPUSER}@${CORPDOMAIN}) &&  _auth="--password ${_pw}"
+          # below does not work due to tricky escaping
+          # TODO: it
+          # _auth=" --password-from-stdin --non-interactive <<<'$(KRPWDE ${CORPUSER}@${CORPDOMAIN})'"
       ;;
       github.com) 
           _pw=$(KRPWDE githubsvn) && _auth="--password  ${_pw} " 
@@ -248,6 +251,21 @@ tgsend () {
  u=$(cat $f)
  hudok "$u" 
  rm -f $f
+}
+
+zebra () {
+ local nrm inv dim hili patt
+ hili='[0m[31m'
+
+ patt=${1}
+ nrm='[0m'
+ inv='[7m'
+ dim='[2m'
+ if [[ -n "$hili" ]] ; then
+   cat - | sed -e "s/\($patt\)/$hili\1$nrm/g" | sed -e "n;s/^\(.*\)$/${dim}\1${nrm}/" 
+ else
+   cat - | sed -e "n;s/^\(.*\)$/${dim}\1${nrm}/"
+ fi
 }
 
  export -f svu
