@@ -3,9 +3,11 @@
 #set -x
 #_RCONN=${1?"No remote [user@]host specified (1st)"}
 
-if [[ -z "$DISPLAY" ]] && [[ -z "$TMUX" ]]; then
-  echo "WARN: Neither DISPLAY nor TMUX"
-  exit
+if [[ ! "${VXISHELL:-nono}" == "YES" ]] ; then
+	if [[ -z "$DISPLAY" ]] && [[ -z "$TMUX" ]]; then
+	  echo "WARN: Neither DISPLAY nor TMUX"
+	  exit
+	fi
 fi
 _RCONN=${1}
 
@@ -28,6 +30,7 @@ export LSHELL_AUXRC=$HOME/.rsshrc
 export RVIMRP=/tmp/.__${thispid}VRP
 export RINCVIMINT_SRC=${RVIMRP}/vimrc.inc
 export RSHELL_AUXRC=${RVIMRP}/.rsshrc
+export RBASHRC_INC=${RVIMRP}/.bashrc.inc
 
 dpf () {
     local -r FN=${1:?"No file to printout specified"}
@@ -171,6 +174,7 @@ finish () {
     ssh $RCONN " [ -d $RVIMRP ] && rm -rf $RVIMRP " 
 }
 #set -x
+echo Veirfying ssh to $RCONN ..
 _RREPL=$(ssh -q  "${RCONN:-UNDEFINDED}" pwd 2>&1) || { echo Could not connect to ["$RCONN"], err.msg is "$_RREPL"; exit 2; }
 
 _RDEFDIR=$_RREPL
@@ -237,7 +241,7 @@ FSELFBASENAME="${0##*/}"
 #RSHEV='export VIMINIT=colorscheme\ torte|set\ timeout\ timeoutlen=1000\ ttimeoutlen=200|set\ <F23>=kj|inoremap\ <F23>\ <C-c><Right>'
 #RSHEV+=';export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=${EDITOR:-vim}'
 #export RSHEV='export VIMINIT=colorscheme\ torte\|set\ timeout\ timeoutlen=1000\ ttimeoutlen\=200\|set\ \<F23\>\=kj\|inoremap\ \<F23\>\ \<C-c\>\<Right\>;export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=${EDITOR:-vim}'
-export RSHEV="export SSHVIMRP=$RVIMRP;export VIMINIT=source\ $RINCVIMINT_SRC;export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=vim"
+export RSHEV="export LESSKEY=$RVIMRP/.less;export SSHVIMRP=$RVIMRP;export VIMINIT=source\ $RINCVIMINT_SRC;export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=vim"
 ####export RSHEV='export VIMINIT=colorscheme\ torte;export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=${EDITOR:-vim}'
 
 
@@ -397,7 +401,7 @@ view_less () {
       (( VID++ ))
       export FPANETIT="scp://$RCONN//$RABSP"
       export FWINDTIT="V${VID}:$(basename $RABSP)"
-      ${LTERM}  "ssh -q -tt $RCONN \" $RSHEV;  { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }; less -RS $RABSP || { echo Please read above, there must be some error msg ;read K; } \" "
+      ${LTERM}  "ssh -q -tt $RCONN \" $RSHEV;  { [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; }; less -RJS $RABSP || { echo Please read above, there must be some error msg ;read K; } \" "
   done
 }
 
@@ -518,6 +522,77 @@ ts2_them () {
   ${TRM} "less ${BUFF2}"
 }
 
+callIshell () {
+  local -r RF=${RDIR%/}/$(echo "$1" | sed  "s/^.*${FZFDLM}//g;s,^./,,g")
+  local LTERM RCMD1 RCMD0 RCMD2 FULLCMD ETRP
+  LTERM=$TRM
+  echo Getting to $RCONN ... 
+  # local RPS1='\e[0;33;1m[\u@\h \W]\$ \e[m'
+  local TRP END
+  RCMD0="$RSHEV ; [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; [ -x ${RF:-n.on_e} ] && cd ${RF}; "
+
+  local INC INCR
+  INC=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  INCR=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+  cat <<EOI >>$INC
+  export PS1="\e[0;34;1m[\u@\h \W]\\\$ \e[m"
+  export INCC="$(date)"
+  trp() { [ -d ${RVIMRP:-.N3vaRegzZ} ] && rm -rf $RVIMRP ; } 
+  trap trp EXIT
+  $RCMD0  
+EOI
+
+cat <<\EOR >>$INCR
+export HNAME=$(hostname -s)
+export IPLASTTETRADE=$(hostname -I|awk -F. "{ print \$NF }")
+export PS1="\e[0;35;1m[\u@${HNAME,,}:${IPLASTTETRADE}\W]\\\$ \e[m"
+EOR
+set -x
+  local SCR
+  SCR=$(mktemp "/tmp/${TMPFX}.XXXX")
+  echo '#SCR'>$SCR
+  FULLCMD="bash --rcfile <( cat ~/.bashrc - <<<$'$(cat $INC $INCR)')"
+  cat <<LSCR >>$SCR
+  ssh -q -tt ${RCONN} \"$FULLCMD\" "
+LSCR
+cat $SCR
+${LTERM} "less $SCR "
+  [ $TMUX ] && LTERM=$TTERM
+  ${LTERM} "bash $SCR "
+  # # ssh -q -tt $RCONN "$FULLCMD"
+}
+
+
+XcallIshell () {
+  local -r RF=${RDIR%/}/$(echo "$1" | sed  "s/^.*${FZFDLM}//g;s,^./,,g")
+  local LTERM RCMD1 RCMD0 RCMD2 FULLCMD ETRP
+  echo GETTING TO $RCONN ... 
+  # local RPS1='\e[0;33;1m[\u@\h \W]\$ \e[m'
+  local TRP END
+  RCMD0="$RSHEV ; [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; [ -x ${RF:-n.on_e} ] && cd ${RF}; "
+  # RCMD1=" bash   --rcfile <(cat ~/.bashrc ; echo '"
+  # TRP="trp() { [ -d ${RVIMRP:-/tmp/.n.o.n} ] && rm -rf $RVIMRP ; } ; "
+  # RCMD2="'; echo trap trp EXIT ; echo '"
+  # RCMD3='export PS1="\e[0;33;1m[\u@\h \W]\$ \e[m" ' # echo export PS1=$RPS1; 
+  # RCMD3='export PS1="$RPS1" ' # echo export PS1=$RPS1; 
+  # END="'; echo $'export TT=123'; echo trap trp EXIT )"
+  # FULLCMD="$RCMD0 $RCMD1 $TRP  $RCMD3 $END"
+  # FULLCMD="bash --rcfile <( cat ~/.bashrc - <<<$'$TRP $RCMD3 ; trap trp EXIT' )"
+
+local INC
+INC=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+rm $INC
+cat <<EOF >>$INC
+export PS1="\e[0;34;1m[\u@\h \W]\\\$ \e[m"
+export INCC="$(date)"
+trp() { [ -d ${RVIMRP:-/tmp/.n.o.n} ] && rm -rf $RVIMRP ; } 
+trap trp EXIT
+$RCMD0  
+EOF
+  FULLCMD="bash --rcfile <( cat ~/.bashrc - <<<$'$(cat $INC)')"
+  ssh -q -tt $RCONN "$FULLCMD"
+}
+
 callshell () {
   local -r RF=${RDIR%/}/$(echo "$1" | sed  "s/^.*${FZFDLM}//g;s,^./,,g")
   local LTERM
@@ -560,7 +635,7 @@ t0b () {
 
 
 export -f  hbin_them handle_action xaste stat_them grab_them dpf act_menu remote_preview \
-           edit_vim edit_emacs view_less tst_them ts2_them t0b trimmeta callshell callRCshell callvifm sel2clipboard
+           edit_vim edit_emacs view_less tst_them ts2_them t0b trimmeta callshell callIshell callRCshell callvifm sel2clipboard
 
 
 RFINDCMD="find $RDIR"
@@ -599,9 +674,11 @@ pushd $SSHVIMRP >/dev/null && tar zc . -C $(dirname $LSHELL_AUXRC) $(basename $L
 echo Done
 
 # trap to cleanup all temp files with our prefix on exit
-trap finish  exit
 #set -x
-ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR | 
+
+[[ "${VXISHELL:-nono}" == "YES" ]] && {  callIshell ; exit ; }
+trap finish  exit
+ ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR | 
          fzf -m  \
 	 --color=dark \
 	 --print-query \
@@ -617,6 +694,7 @@ ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR |
          --bind "alt-t:toggle-preview" \
 	 --bind "f2:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; act_menu $PRIMB )" \
 	 --bind "alt-space:execute-multi(printf \"%s\n\" {}>$PRIMB  ; act_menu $PRIMB )" \
+	 --bind "ctrl-space:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; view_less $PRIMB )" \
 	 --bind "f3:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; view_less $PRIMB )" \
 	 --bind "f6:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; stat_them $PRIMB )" \
 	 --bind "f7:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; hbin_them $PRIMB )" \
