@@ -268,4 +268,30 @@ zebra () {
  fi
 }
 
+fcd () {
+ local searchdir
+ searchdir=${1:-$HOME}
+ local HSELOPT="-q $2"
+ [ -z "$2" ] &&  HSELOPT="-q $2"
+ local FZFOPTSSAVE
+ local FZFCOLORS
+ FZFOPTSSAVE=$FZF_DEFAULT_OPTS
+ FZFCOLORS="\
+ --color=fg:#d0d0d0,bg:-1,hl:#5f87af \
+ --color=fg+:#d0d0d0,bg+:#262626,hl+:#5fd7ff \
+ --color=info:#afaf87,prompt:#d7005f,pointer:#af5fff \
+ --color=marker:#87ff00,spinner:#af5fff,header:#87afaf"
+ FZF_DEFAULT_OPTS="--exact --tiebreak=begin $FZFCOLORS  --bind=*:toggle,alt-j:jump-accept  -m   "
+
+    # https://github.com/fish-shell/fish-shell/issues/1362
+    tmpfile=$(mktemp)
+    find $searchdir \( ! -regex '.*/\..*' \) ! -name __pycache__ -type d 2>/dev/null | fzf "$HSELOPT"  > $tmpfile
+    destdir=$(cat $tmpfile)
+    rm -f $tmpfile
+ FZF_DEFAULT_OPTS=$FZFOPTSSAVE
+
+    [ -z "$destdir" ] && return 1
+    cd $destdir
+}
+
  export -f svu
