@@ -3,6 +3,28 @@
 #set -x
 #_RCONN=${1?"No remote [user@]host specified (1st)"}
 
+function vxyn ()
+{
+  local lhint=${1:-'Are you sure? (y/n)'}
+  local REPLY=N
+  local lRetVAR=${2:-VXRET}
+
+  read -p "$lhint"  
+  while [ ! "$REPLY" == "y" -a ! "$REPLY" == "n" ]
+  do 
+    read -p "Enter (y/n)?"  
+  done
+  if [ "$REPLY" == "y" ] 
+  then
+    echo yes
+    return 0
+  else 
+    echo no
+    return 1
+  fi
+# 0 means yes (success), 1 - no
+} 
+ 
 SeedIt () {
   echo -n Preparing remote environment ... 
   [ -d "$LBIN" ] && BINADDON="-C $(dirname $LBIN) $BINBASE"
@@ -416,9 +438,8 @@ callvifm () {
 
 finish () {
     local STMP
-    echo Removing the guard $GUARDPID 
-    [[ -n "${GUARDPID}" ]] && kill -TERM ${GUARDPID}
-    echo PID of self is $$
+    [[ -n "${GUARDPID}" ]] && { echo -n "Taking off the guard $GUARDPID ...";  kill -TERM ${GUARDPID} ; }
+    # echo - n PID of self is $$
     echo -n Wiping out temp files ...
     STMP="${SELF_TMP_DIR:=prevent_accidental_deletion}"
     [[ -x "$STMP" ]] &&  rm -rf "$STMP" 
@@ -496,13 +517,6 @@ ECODE=$?
 
 # Remote ssh connection string used globally in subshell and  exported functions
 export RCONN=${RUSER}$RHOST
-
-# if [[ ! "${VXISHELL:-nono}" == "YES" ]] ; then
-# 	if [[ -z "$DISPLAY" ]] && [[ -z "$TMUX" ]]; then
-# 	  echo "WARN: Neither DISPLAY nor TMUX"
-# 	  exit
-# 	fi
-# fi
 
 
 # local folder to keep downloads
@@ -689,12 +703,18 @@ else
    exit 
 fi
 
-PrepIncs
-SeedIt
-
 # trap to cleanup all temp files with our prefix on exit
 trap finish  exit
  
+
+if [[ ! "${INTERACTIVE:-0}" == "1" ]] && [[ -z "$DISPLAY" ]] && [[ -z "$TMUX" ]]; then
+  echo "WARN: Neither DISPLAY nor TMUX"
+  vxyn "Interactive shell option will be not available in this session, sure to continue?" || exit
+fi
+
+PrepIncs
+SeedIt
+
 
 RSHRC1=$REMOTE_SESSION_RCDIR/$(basename $RSHELL_RC_INC_EXPAND)
 RSHRC2=$REMOTE_SESSION_RCDIR/$(basename $RSHELL_RC_INC_NOEXPAND) 
