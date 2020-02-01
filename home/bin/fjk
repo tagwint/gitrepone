@@ -601,6 +601,9 @@ P2=$2
       h) FOPT="  \( ! -path '**/jackrabbit/datastore/*' \) -type f " 
             RDIR="~"
 	   ;;
+      d) FOPT=" -type d " 
+            RDIR="/"
+	   ;;
       i) INTERACTIVE=1
 	   ;;
       *) FOPT="\( -type  f -o  -type l \)"
@@ -662,7 +665,7 @@ FSELFBASENAME="${0##*/}"
 # [[ "${FSELFBASENAME:0:1}" == "f" ]] && FOPT="$FOPT -type f"
 # [[ "${XJJ_FINDEPTH}" ]] && FOPT="$FOPT -maxdepth $XJJ_FINDEPTH"
 
-export RSHEV="export LESSKEY=$REMOTE_SESSION_RCDIR/.less;export SSHVIMRP=$RVIMRP;export VIMINIT=source\ $RINCVIMINT_SRC;export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=vim"
+export RSHEV="export LESSKEY=${REMOTE_SESSION_RCDIR}/.vim/.less;export SSHVIMRP=$RVIMRP;export VIMINIT=source\ $RINCVIMINT_SRC;export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=vim"
 
 
 ##VXTODO {} for view in exec cannot handle space in filename - need to figure out the proper escaping for execute of terminal + exec + remote command
@@ -677,6 +680,7 @@ export -f  hbin_them handle_action xaste stat_them grab_them dpf act_menu remote
            edit_vim edit_emacs view_less t0b trimmeta callIshell callvifm sel2clipboard
 
 RFINDCMD="find $RDIR"
+
 RFINDCMD="cd $RDIR && find  ${FOPT} -printf '%TY-%Tm-%Td %TI:%TM %m %10s ${FZFDLM}%p\n'"
 #RFINDCMD="cd $RDIR && find"
 BUFF20=$(t0b)
