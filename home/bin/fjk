@@ -278,11 +278,11 @@ sel2clipboard () {
   cat $FTMP2 | sed "s,^,${RCONN}:," |xsel -b -i  
 
   case $FMT in
-      0) cat $FTMP2 | xsel -p -i 
+      0) cat $FTMP2 | xsel -b -i 
 	   ;;
-      1) cat $FTMP2 | sed "s,^,${RCONN}:," |xsel -p -i  
+      1) cat $FTMP2 | sed "s,^,${RCONN}:," |xsel -b -i  
 	   ;;
-      2) cat $FTMP2 | sed "s,^,scp://${RCONN}/," |xsel -p -i  
+      2) cat $FTMP2 | sed "s,^,scp://${RCONN}/," |xsel -b -i  
 	   ;;
   esac
 }
@@ -454,6 +454,7 @@ _RCONN=${1}
 
 myself=$0
 thisbn=$(basename "$0")
+thisdir=$(dirname "$0")
 thispid=$$
 export TMPFX=${thisbn}_${thispid}
 
@@ -545,8 +546,8 @@ export LINCVIMINT_SRC=$SSHVIMRP/vimrc.inc
 # that inc above uses SSHVIMRP variable inside so the name SSHVIMRP is kind of reserved, you'd better stick with it
 
 # bins to transfer, wehre to get them from 
-export LBIN=$HOME/.rbin
-export LDOTMES=$HOME/.rdotme
+export LBIN=${thisdir}/.rbin
+export LDOTMES=${thisdir}/.rdotme
 export BINBASE=$(basename $LBIN)
 
 # name of file to be used as an aggregated rcfile
@@ -559,7 +560,7 @@ export LCOPYOFRBASHRC=${SELF_TMP_DIR}/remotebashrc
 
 
 # an include rc file to be added(sourced) to the finally composed --rcfile of the remote bash session
-export LSHELL_AUXRC=$HOME/.rsshrc
+export LSHELL_AUXRC=${thisdir}/.rsshrc
 export _TSTMP=$(date +"%g%m%d%H%M%S")
 
 
