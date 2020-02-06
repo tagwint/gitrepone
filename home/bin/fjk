@@ -569,7 +569,7 @@ export _TSTMP=$(date +"%g%m%d%H%M%S")
 echo Verifying ssh to $RCONN ..
 C2V=${RCONN:?"Connecion UNDEFINDED"}
 # _RREPL=$(ssh -q  "$C2V" id -u 2>&1) || { echo Could not connect to ["$C2V"], see details below ; ssh  $C2V ; exit 2; }
-ssh -q  "$C2V" 'pwd ; cat .bashrc' 2>&1 > $LCOPYOFRBASHRC || { echo Could not connect to ["$C2V"], see details below ; ssh  $C2V ; exit 2; }
+ssh -q  "$C2V" 'pwd ; if [ -r .bash_profile ]; then cat .bash_profile; else echo "# .bash_profile " ;fi' 2>&1 > $LCOPYOFRBASHRC || { echo Could not connect to ["$C2V"], see details below ; ssh  $C2V ; exit 2; }
 RDEFAULTWD=$( head -n 1  $LCOPYOFRBASHRC )
 sed -i '1d' $LCOPYOFRBASHRC
 
