@@ -294,4 +294,13 @@ fcd () {
     cd $destdir
 }
 
- export -f svu
+tsx () {
+  local TIMESTAMP_FORMAT='%Y-%m-%d-%H:%M:%S'
+  local Prepend
+  Prepend=${1}
+  while IFS= read -r line; do printf "%(${TIMESTAMP_FORMAT})T %s\n" '-1'  "${Prepend}${line}"; done
+}
+
+
+ export -f svu tsx
+
