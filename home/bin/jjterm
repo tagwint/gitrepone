@@ -13,7 +13,7 @@ GYS=$(( $(tput lines) * 12 / 15 ))
 GEOP="--geometry=${GXP}x${GYP}"
 GEOS="--geometry=${GXS}x${GYS}"
 TRM="xfce4-terminal $GEOS --command="
-TRM="tilix $GEOS --title=FLLOAT --command="
+TRM="tilix $GEOS --title=FLLOAT --profile=Molo --command="
 #TRM="lxterminal $GEOS --command="
 #TRM="roxterm $GEOP -e "
 LOG=/tmp/jjterm.log
