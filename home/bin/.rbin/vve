@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Call recently edited by vim allowing to select with fzf
+# set -x
+[[ -z "$1" ]] || HSELOPT=(-1 -q "$*")
+
+TF1=$(mktemp -u)
+#TF2=$(mktemp -u)
+trap 'rm $TF1' EXIT
+
+
+vim -c ':exe "redir => m | silent browse old | redir END | put=m"' -c ":w $TF1" -c ":q"
+
+# TODO PREVENIVE CHECK FOR FILE EXISTANCE AND MARK THE ENTRIES THAT DO
+# NOT EXIST ANYMORE
+# sed '/^[0-9]*:/!d;' "$TF1"| awk 
+
+#export FZF_DEFAULT_OPTS="--exact --tiebreak=begin --color=dark,hl:220,hl+:226,fg:86,bg+:244,fg+:84                   --bind=*:toggle,alt-j:jump-accept  -m"
+export FZF_DEFAULT_OPTS="--exact --tiebreak=begin --color=dark,hl:220,hl+:226,fg:36,bg+:240,fg+:86                   --bind=*:toggle,alt-j:jump-accept  -m"
+TFN=$(sed '/^[0-9]*:/!d;' $TF1  | fzf --header="<< files recently edited by vim, select and Enter to open again" +s "${HSELOPT[@]}"| awk '{print $2}') 
+FN=$(eval echo $TFN)
+if [[ ! $FN =~ ^(scp|zipfile):/.*$ ]]
+ then
+  if [[ -f "${FN:-noone}" ]] 
+  then 
+   exec vim $FN
+  else 
+   [[ ! -z "$FN" ]] && { >&2 echo "FILE IS NOT(anymore?) THERE: $FN "; exit 1; }
+  fi 
+ else 
+	 if [[ $FN =~ ^zipfile:/.*$ ]]
+	 then 
+	  ##echo ZIP file may be there yet
+	  TESTC=$(eval echo "$FN" | sed 's|^zipfile:\(.*\)::.*$|stat \1|')
+	  eval $TESTC >/dev/null && { exec vim $FN; } || { >&2 echo ARCHIVE FILE IS NOT HERE FOR: $FN; exit 1; }
+	 fi
+	 if [[ $FN =~ ^scp://.*$ ]]
+	 then 
+	  ##echo Remote file may take longer to open
+	  TESTC=$(eval echo $FN | sed 's|^scp://|ssh |;s|//| stat /|')
+	  eval $TESTC >/dev/null && { exec vim $FN; } || { >&2 echo FAILED TO REACH: $FN; exit 1; }
+	 fi
+fi

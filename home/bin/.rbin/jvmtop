@@ -1,0 +1,65 @@
+#!/bin/sh
+# jvmtop - java monitoring for the command-line 
+# launch script
+#
+# author: Markus Kolb
+# 
+
+function vxyn ()
+{
+  local lhint=${1:-'Are you sure? (y/n)'}
+  local REPLY=N
+  local lRetVAR=${2:-VXRET}
+
+  read -p "$lhint"  
+  while [ ! "$REPLY" == "y" -a ! "$REPLY" == "n" ]
+  do 
+    read -p "Enter (y/n)?"  
+  done
+  if [ "$REPLY" == "y" ] 
+  then
+    echo yes
+    return 0
+  else 
+    echo no
+    return 1
+  fi
+# 0 means yes (success), 1 - no
+} 
+
+java -version 2>/dev/null || {
+  echo >&2 No java seems to be set here.
+  vxyn "Try to find it?" && {
+     >&2 echo Scanning for JDK ...
+     SELJ=$(find / -path '**/jdk*/bin/java' 2>/dev/null 2>/dev/null |grep -v '/jre/' | fzf)
+     JAVA_HOME="$( dirname $(dirname ${SELJ:-/}))"
+     if [[ "$JAVA_HOME" == "/" ]] ; then
+       >&2 echo Scanning faied. Exiting..
+     else 
+       >&2 echo setting JAVA_HOME to $JAVA_HOME
+     fi
+  }
+}
+
+DIR=`cd "\`dirname "$0"\`" && pwd`
+
+if [ -z "$JAVA_HOME" ] ; then
+        JAVA_HOME=`readlink -f \`which java 2>/dev/null\` 2>/dev/null | \
+        sed 's/\/bin\/java//'`
+fi
+
+TOOLSJAR="$JAVA_HOME/lib/tools.jar"
+
+if [ ! -f "$TOOLSJAR" ] ; then
+        echo "$JAVA_HOME seems to be not a JDK!" >&2
+        exit 1
+fi
+
+>&2 echo Running JVMS here:
+
+${JAVA_HOME}/bin/jps -lv | grep -v 'sun.tools.jps.Jps' |awk '{ print $1,$2,$3 }' | column -t
+
+>&2 echo Starting jvmtop ...
+"$JAVA_HOME"/bin/java $JAVA_OPTS -Djava.security.egd="file:/dev/./urandom"  -Xmx256m -cp "$DIR/jvmtop.jar:$TOOLSJAR" \
+com.jvmtop.JvmTop "$@" | grep -vi 'jvmtop' 
+exit $?
