@@ -437,8 +437,13 @@ callvifm () {
 }
 
 finish () {
-    local STMP
-    [[ -n "${GUARDPID}" ]] && { echo -n "Taking off the guard $GUARDPID ...";  kill -TERM ${GUARDPID} ; }
+    local STMP RHLOC
+    [[ -n "${GUARDPID}" ]] && { 
+      RHLOC=/tmp/$RCONN
+      echo "Saving history from ${RHK3:-oops} to $RHLOC .."
+      ssh -q $RCONN "cat $RHK3 | gzip " | gzip -d >>$RHLOC
+      echo -n "Taking off the guard $GUARDPID ...";  kill -TERM ${GUARDPID}
+    }
     # echo - n PID of self is $$
     echo -n Wiping out temp files ...
     STMP="${SELF_TMP_DIR:=prevent_accidental_deletion}"
@@ -709,6 +714,7 @@ else
 fi
 
 # trap to cleanup all temp files with our prefix on exit
+source <(grep '^HISTKEEP3=' "${LSHELL_AUXRC}"|sed 's/HISTKEEP3/RHK3/'|sed "s|~|$RDEFAULTWD|")
 trap finish  exit
  
 
