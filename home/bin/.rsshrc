@@ -1,0 +1,305 @@
+# vim: ft=sh
+THISP=$(dirname $BASH_SOURCE)
+
+
+HISTKEEP3=~/.config/vifm/vifmhist
+HISTKEEP3DIR=$(dirname $HISTKEEP3)
+HISTKEEP3IGNORE=${THISP}/.rdotme/.hk3.ignore
+
+export MC_HOME=${THISP}/.rdotme/mchome
+# since Version 4.8.19 of mc 
+export MC_PROFILE_ROOT=$MC_HOME
+
+if [ ! -x "$HISTKEEP3DIR" ] ; then
+  mkdir -p "$HISTKEEP3DIR" 
+fi
+
+if [ -f ~/.bash_history ] ; then 
+ touch ${HISTKEEP3}
+ cat ~/.bash_history <(grep -v '^#_# ' $HISTKEEP3) | sort -u | sed 's/^/#_# /' >> $HISTKEEP3
+else 
+ #just in case it is not there yet
+ touch ${HISTKEEP3}
+fi
+
+touch "${HISTKEEP3IGNORE}"
+# so the trap on exit knows where to take the session history away from 
+export HISTKEEP3
+export HISTKEEP3IGNORE
+
+ZZ() { 
+ exit
+}
+
+xx() {
+ exit
+}
+
+eg() { env | grep ${1:-.} | sort; }
+
+dug() {   du ${2:-.} -BG --max-depth=${1:-4} | sort -n ; }
+dum() {   du ${2:-.} -BM --max-depth=${1:-4} | sort -n ; }
+hig() {   history |grep "$@" ; }
+vimo() { vim -c 'browse old' ; }
+#
+#
+pub () {
+ which sfk || { echo No sfk here on $(hostname); return 1; }
+ local sff
+ sff=$(which sfk)
+ $sff httpserv -port 7777
+}
+
+mbs () {
+  set -x
+  local CMD=${1:-status}
+  systemctl 2>/dev/null 1>&2 || { echo no systemd  here; return 2 ; }
+  systemctl | grep -E '(tomcat|wfswarm).*service' | cut -c 3- | awk '{print $1}' | xargs -I {} sudo systemctl ${CMD} {}
+  set +x
+}
+
+ppub () {
+  local PORT=${1:-7777}
+  echo http://$(hostname -i):$PORT
+  echo http://$(hostname):$PORT
+  python -m SimpleHTTPServer ${1:-7777}
+}
+
+pidenv () {
+ local P=${1?"No PID given"}
+ [ -r /proc/$P/environ ] && cat /proc/$P/environ| tr '\000' '\n' || echo "No proc with PID=$P"
+}
+
+export HBLOGNET=${CORPHB7:-UnknownHBurl}
+
+transfer() {
+ local pubname=${2:-$(basename ${1?"FN 2 transfer missed"})} 
+ curl --upload-file $1 https://transfer.sh/$pubname
+}
+
+haste() 
+{
+ local f=$(mktemp);  cat - >$f 
+ local URL=${1:-$HBLOGNET}
+ local u=$(echo ${URL}/$(curl -s  --data-binary "@$f" $URL/documents | awk -v HB=$URL -F '"' '{print $4}'))
+ echo $u
+ [ -z "$DISPLAY" ] || xdg-open $u
+ rm -f $f
+}
+
+hbin() {
+ haste http://hastebin.com
+}
+
+jget()
+{
+  local URL=${1?"No url to get"}
+  local TOFILE=${2}
+  [ -z  "$TOFILE" ] || local OUTPUT="-O $TOFILE"
+  # on the machine with keyring it should work, if faile ask for password
+  wget --auth-no-challenge --http-user=${CORPUSER:-unknown} $OUTPUT ${URL/uth=co/uth=ba} ||  wget --ask-password --auth-no-challenge --http-user=${CORPUSER:-unknown} $OUTPUT ${URL/uth=co/uth=ba}
+}
+
+tit()
+{
+  local TS=$(date +%y%m%d-%H%M%S)
+  local TIT=/tmp/${1:-_vx${TS}}
+  mkdir -p $TIT
+  cd $TIT
+}
+
+ddif () {
+  LDIR=${1?"Left dir not specified"}
+  RDIR=${2?"Right dir not specified"}
+  
+  EXLD=/tmp/dircomapreignore
+  echo  '*.log'          >$EXLD
+  echo  'webkernel.log*'>>$EXLD
+  
+  echo LDIR=$LDIR
+  echo RDIR=$RDIR
+  echo #---
+  
+  diff -rq $LDIR $RDIR -X $EXLD              |   # comment
+   sed "s@$LDIR@\$LDIR/@g;s@$RDIR@\$RDIR/@g" |
+   sed 's/Only in \$RDIR/ROnly in x \$RDIR/g;s/Only in \$LDIR/LOnly \$LDIR/g'|
+   sed 's@: *@/@g'|
+   sed 's/[[:space:]]and[[:space:]]/ /g' |
+   sed 's/[[:space:]]x[[:space:]]/ /g' |
+   sed 's/[[:space:]]in[[:space:]]/ /g' |
+   sed 's/[[:space:]]differ//g' |
+   sed 's/^ROnly /ROnly - /g' |
+   sed 's/^ROnly/R/g;s/^LOnly/L/g;s/^Files/D/g' |
+   sort |
+   column -t
+}
+
+
+tcport () {
+ local H P
+ H=${1:-localhost}
+ P=${2:-22}
+ (echo >/dev/tcp/${H}/${P}) &>/dev/null && echo "${H}:${P} is open" || echo "${H}:${P} is closed"
+}
+
+
+fdswap () {
+  local src dst pids pid
+  local FN
+  FN=${FUNCNAME[0]}
+  if [ "$2" = "" ]; then 
+  	echo "
+      Usage: $FN /path/to/oldfile /path/to/newfile [pids]
+      Example: $FN /var/log/daemon.log /var/log/newvolume/daemon.log 1234
+      Example: $FN /dev/pts/53 /dev/null 2345"; return 0
+  fi
+
+  if gdb --version > /dev/null 2>&1; then true
+  else echo "Unable to find gdb."; return 1
+  fi
+  
+  src="$1"; dst="$2"; shift; shift 
+  pids=$* 
+  
+  for pid in ${pids:=$( /sbin/fuser $src | cut -d ':' -f 2 )}; 
+  do
+      echo "src=$src, dst=$dst"
+      echo "$src has $pid using it" 
+      ( 
+          echo "attach $pid" 
+          echo 'call open("'$dst'", 66, 0666)'
+          for ufd in $(LANG=C ls -l /proc/$pid/fd | \
+          grep "$src"\$ | awk ' { print $9; } '); 
+   	    do echo 'call dup2($1,'"$ufd"')'; done 
+          echo 'call close($1)'
+          echo 'detach'; echo 'quit' 
+          sleep 5
+      ) | gdb -q -x -
+  done
+}
+
+scontRain () {
+ local nrm inv dim hili patt green
+ hili="[0m[31m";\
+ green="[32m";\
+ red="[31m";\
+ magenta="[35m";\
+ inv="[7m";\
+ dim="[2m";\
+ nrm="[0m"
+ patt=${1}
+ # cat - | sed -e "s/^\(running\)$/${green}\1${nrm}/ig;s/^\(failed\)$/${red}\1${nrm}/ig;"
+ cat - | sed -e "s/^\(.*\)\(running\)\(.*\)$/\1${green}\2${nrm}\3/ig;s/^\(.*\)\(dead\)\(.*\)$/\1${red}\2${nrm}\3/ig;s/^\(.*\)\(failed\)\(.*\)$/\1${magenta}\2${nrm}\3/ig"
+}
+
+#there , on remote
+keep_hist_there() { 
+  local LASTC
+  local NLCOUNT
+  local BMUL EMUL
+  #prevenitng sequential (only) duplicates on the fly
+  #if the very last command saved in history is the same
+  #do not save duplicate 
+  LASTC=$(history 1)
+
+  NLCOUNT=$(hexdump -b <<<"$(history 2)" | grep -o ' 012'| wc -l)
+  local FLK=${HISTKEEP3}.lastkept
+  tail -n 1 ${HISTKEEP3} >$FLK
+
+  if [[ ${NLCOUNT:-1} -gt 2 ]] ; then 
+    BMUL="#BOL_MULTI: "
+    EMUL=" #:EOL_MULTI"
+    { echo "$BMUL" ; cat - <<<"$LASTC" ; } | grep -v --file  ${HISTKEEP3IGNORE} | grep -v --fixed-strings --file $FLK |
+    sed 's/^[[:space:]]*[0-9]*[[:space:]]*//g'|tr '\n' ' '  >>${HISTKEEP3}; echo "$EMUL" >>${HISTKEEP3}
+  else
+    cat - <<<"$LASTC" | grep -v --file  ${HISTKEEP3IGNORE} | grep -v --fixed-strings --file $FLK |
+    sed 's/^[[:space:]]*[0-9]*[[:space:]]*//g'  >>${HISTKEEP3};
+  fi
+
+} 
+
+
+xsudo () { 
+  local sudocmd sudoright nofr arg1
+  arg1=$1
+  if [[ $(id -u) -eq 0 ]] ; then
+    #empty when already superuser
+    sudocmd=
+    return
+  else
+    timeout 1 bash -c 'command sudo -l' >/dev/null 2>&1 || { echo 'Could not check sudo priviliges, it seems like a password is required'; return ; }>&2
+    #depending on privileges
+    nofr=$(command sudo -l | sed -e '1,/may.run.the/d' | wc -l)
+    if [[ "$nofr" -eq 1 ]]; then
+      # just one line of privs
+      sudoright=$(command sudo -l | sed -e '1,/may.run.the/d')
+      if [[ "$sudoright" =~ ^[[:space:]]*.root.[[:space:]]*NOPAS.*/bin/su[[:space:]]*$ ]]; then
+        # if pwdless /bin/su only, aka case102  
+        if [[ ! "$arg1" == '_dryrun' ]]; then
+          # prepending with builtin sudo
+          sudocmd="command sudo"
+        else
+          # unless dryrun, where only export flag to activate alias
+          export _sudlim102=1
+          return 
+        fi
+      else
+        #some other single privilege
+        sudoright=$(command sudo -l | sed -e '1,/may.run.the/d' | tail -n 1 )
+        if [[ "$sudoright" =~ ^.*NOPASSWD:[[:space:]]*ALL[[:space:]]*$ ]]; then
+          # nopasswd all no wrapper required, normal sudo is good anyway,  bypassing. 
+          # like the last of many unknown handled above, just single
+          return 
+        else 
+          #some other single privilege, bypassing until case defined someday
+          >&2 echo Unknown set of sudo priveligies like below detected:
+          command sudo -l
+          return 
+        fi
+      fi  
+    else 
+      # multiple privs, checking the last one
+      sudoright=$(command sudo -l | sed -e '1,/may.run.the/d' | tail -n 1 )
+      if [[ "$sudoright" =~ ^.*NOPASSWD:[[:space:]]*ALL[[:space:]]*$ ]]; then
+        # nopasswd all no wrapper required, normal sudo is good anyway,  bypassing.
+        return 
+      else 
+        #some arbitrary multiple privileges, bypassing until case defined someday
+        >&2 echo Unknown set of sudo priveligies like below detected:
+        command sudo -l
+        return 
+      fi
+    fi  
+  fi  
+  # getting here means known case of limitaion is there, by now it is only 102 case
+  if [[ "$arg1" =~ ^[[:space:]]*-.*$ ]]; then
+    # when arg starts with a dash, it is most probably no command but an option of sudo itself, like -l
+    # bypass these ...
+    command sudo "$*"
+  else 
+    $sudocmd su - -c "$*"
+  fi  
+}
+
+function ak_fingerprints() {
+  local file="${1:-$HOME/.ssh/authorized_keys}"
+  while read l; do
+    [[ -n $l && ${l###} = $l ]] && ssh-keygen -l -f /dev/stdin <<<$l
+  done < "${file}"
+}
+# dryrun just to set flag of 102 case
+# set -x
+xsudo _dryrun
+# set +x 
+[[ "${_sudlim102:-0}" -eq 1 ]] && alias sudo='xsudo "$@"'
+[[ -f ${THISP}/.rdotme/.bash-preexec.sh ]] && source ${THISP}/.rdotme/.bash-preexec.sh
+preexec_functions+=(keep_hist_there)
+
+[ -f ${THISP}/.rdotme/key-bindings.bash ] && source ${THISP}/.rdotme/key-bindings.bash
+
+# export -f keep_hist_there ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain
+export -f ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain ak_fingerprints 
+
+# export FZF_DEFAULT_OPTS="--exact --tiebreak=begin --color=dark,hl:220,hl+:226,fg:36,bg+:240,fg+:86,pointer:0,marker:1  --bind=*:toggle,alt-j:jump-accept  -m"
+export FZF_DEFAULT_OPTS="--exact --tiebreak=begin --bind=*:toggle,alt-j:jump-accept  -m"
+
