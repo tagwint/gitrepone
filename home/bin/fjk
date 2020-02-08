@@ -28,7 +28,7 @@ function vxyn ()
 SeedIt () {
   echo -n Preparing remote environment ... 
   [ -d "$LBIN" ] && BINADDON="-C $(dirname $LBIN) $BINBASE"
-  # this way we collect all the items by visiting its dirs and grabbing the base
+  # this way we collect all the items by visiting their dirs and grabbing the base
   # then, on remote they are placed under the session remote dir each with its original basename
   time \
   tar zc -C $(dirname $SSHVIMRP)   $(basename $SSHVIMRP) \
@@ -439,7 +439,7 @@ callvifm () {
 finish () {
     local STMP RHLOC
     [[ -n "${GUARDPID}" ]] && { 
-      RHLOC=/tmp/$RCONN
+      RHLOC=${ONTO4_DRCMDHIST:-/tmp}/$RCONN
       echo "Saving history from ${RHK3:-oops} to $RHLOC .."
       ssh -q $RCONN "cat $RHK3 | gzip " | gzip -d >>$RHLOC
       echo -n "Taking off the guard $GUARDPID ...";  kill -TERM ${GUARDPID}
@@ -550,7 +550,7 @@ export SELF_TMP_DIR=$(mktemp -d "/tmp/d_${TMPFX}.XXXXXX")
 export LINCVIMINT_SRC=$SSHVIMRP/vimrc.inc
 # that inc above uses SSHVIMRP variable inside so the name SSHVIMRP is kind of reserved, you'd better stick with it
 
-# bins to transfer, wehre to get them from 
+# bins to transfer, where to get them from 
 export LBIN=${thisdir}/.rbin
 export LDOTMES=${thisdir}/.rdotme
 export BINBASE=$(basename $LBIN)
@@ -572,7 +572,7 @@ export _TSTMP=$(date +"%g%m%d%H%M%S")
 
 # set -x
 echo Verifying ssh to $RCONN ..
-C2V=${RCONN:?"Connecion UNDEFINDED"}
+C2V=${RCONN:?"Connecion is UNDEFINED"}
 # _RREPL=$(ssh -q  "$C2V" id -u 2>&1) || { echo Could not connect to ["$C2V"], see details below ; ssh  $C2V ; exit 2; }
 ssh -q  "$C2V" 'pwd ; if [ -r .bash_profile ]; then cat .bash_profile; else echo "# .bash_profile " ;fi' 2>&1 > $LCOPYOFRBASHRC || { echo Could not connect to ["$C2V"], see details below ; ssh  $C2V ; exit 2; }
 RDEFAULTWD=$( head -n 1  $LCOPYOFRBASHRC )
