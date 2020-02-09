@@ -351,13 +351,13 @@ act_menu () {
 
 PrepIncs () {
   RF=${RDIR%/}/
-  echo Getting to $RCONN ... 
+  echo Getting to $RCONN , RDIR is ${RDIR:-notset}, target dir is  $RF ... 
   RCMD0="$RSHEV ; [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; [ -x ${RF:-n.on_e} ] && cd ${RF}; "
 
   export RSHELL_RC_INC_EXPAND=$(t0b).xpnd1
   export RSHELL_RC_INC_NOEXPAND=$(t0b).noxpnd2
   cat <<EORSHELL_RC_INC_EXPAND >>$RSHELL_RC_INC_EXPAND
-  # vim: ft=sh
+# vim: ft=sh
   echo \$\$>>"${SIBLING_SHELL_COUNTER}"
   export INCC="\$(date)"
   export MYVIFMRC=$REMOTE_SESSION_RCDIR/${BINBASE}/vifmrc
@@ -395,7 +395,14 @@ export IPLASTTETRADE=$(hostname -I|awk -F. "{ print \$NF }")
 ## PS1 flaw: always shows $ at the prompt end, even for root, because of \$ is interpredted hard way
 export PS1="\[\033[38;5;166m\]\u\[$(tput sgr0)\]\[\033[38;5;15m\]@\[$(tput sgr0)\]\[\033[38;5;11m\]${HNAME,,}\[$(tput sgr0)\]\[\033[38;5;15m\]:${IPLASTTETRADE}\[$(tput sgr0)\]\[\033[38;5;6m\][\[$(tput sgr0)\]\[\033[38;5;186m\]\w\[$(tput sgr0)\]\[\033[38;5;6m\]]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"
 EORSHELL_RC_INC2
-cat $LCOPYOFRBASHRC $RSHELL_RC_INC_EXPAND $RSHELL_RC_INC_NOEXPAND > $LAGGSHRC
+#Now compoisng final rc file for remote shell
+cat > $LAGGSHRC \
+    <(echo '# $LCOPYOFBASHPROFILE     PART: ==== ') $LCOPYOFBASHPROFILE     \
+    <(echo '# $RSHELL_RC_INC_EXPAND   PART: ==== ') $RSHELL_RC_INC_EXPAND   \
+    <(echo '# $RSHELL_RC_INC_NOEXPAND PART: ==== ') $RSHELL_RC_INC_NOEXPAND \
+    
+# DEBUG
+cat $LAGGSHRC > /tmp/000debug_laggshrc_for_${RCONN}
 }
 
 
@@ -405,7 +412,7 @@ callIshell () {
   local LTERM RCMD1 RCMD0 RCMD2 FULLCMD ETRP
   local FULLCMD
   LTERM=$TRM
-  echo Getting to $RCONN ... 
+  echo Getting to $RCONN ..., Target dir is RD=${RD:-none} 
 
   # FULLCMD="bash --rcfile <( cat ~/.bashrc $REMOTE_SESSION_RCDIR/$(basename $RSHELL_RC_INC_EXPAND) $REMOTE_SESSION_RCDIR/$(basename $RSHELL_RC_INC_NOEXPAND); echo cd $RD )"
   FULLCMD="bash --rcfile <( cat ${RAGGSHRC} ; echo cd $RD )"
@@ -550,38 +557,48 @@ export SELF_TMP_DIR=$(mktemp -d "/tmp/d_${TMPFX}.XXXXXX")
 export LINCVIMINT_SRC=$SSHVIMRP/vimrc.inc
 # that inc above uses SSHVIMRP variable inside so the name SSHVIMRP is kind of reserved, you'd better stick with it
 
+# an include rc file to be added(sourced) to the finally composed --rcfile of the remote bash session
+export LSHELL_AUXRC=${thisdir}/.rsshrc
+export _TSTMP=$(date +"%g%m%d%H%M%S")
+# reuse RDOTEMEBASE value from aux rc file here
+# to have it through the same name variable defined once there
+source <(grep '^RDOTEMEBASE=' "${LSHELL_AUXRC}")
+
+
 # bins to transfer, where to get them from 
+#ONTO4_DPAYLOAD
 export LBIN=${thisdir}/.rbin
-export LDOTMES=${thisdir}/.rdotme
+export LDOTMES=${thisdir}/${RDOTMEBASE:-.rdotme}
 export BINBASE=$(basename $LBIN)
 
 # name of file to be used as an aggregated rcfile
 # to be created locally in a temp dir then 
-# delivered by Seed to its remote location sharede accross all the further sessions
+# delivered by Seed to its remote location shared accross all the further sessions
 export AGGSHRCBASE=.aggrc
 export LAGGSHRC=${SELF_TMP_DIR}/${AGGSHRCBASE}
-export LCOPYOFRBASHRC=${SELF_TMP_DIR}/remotebashrc
+export LCOPYOFBASHPROFILE=${SELF_TMP_DIR}/remotebash_profile
 
-
-
-# an include rc file to be added(sourced) to the finally composed --rcfile of the remote bash session
-export LSHELL_AUXRC=${thisdir}/.rsshrc
-export _TSTMP=$(date +"%g%m%d%H%M%S")
 
 
 
 # set -x
 echo Verifying ssh to $RCONN ..
 C2V=${RCONN:?"Connecion is UNDEFINED"}
-# _RREPL=$(ssh -q  "$C2V" id -u 2>&1) || { echo Could not connect to ["$C2V"], see details below ; ssh  $C2V ; exit 2; }
-ssh -q  "$C2V" 'pwd ; if [ -r .bash_profile ]; then cat .bash_profile; else echo "# .bash_profile " ;fi' 2>&1 > $LCOPYOFRBASHRC || { echo Could not connect to ["$C2V"], see details below ; ssh  $C2V ; exit 2; }
-RDEFAULTWD=$( head -n 1  $LCOPYOFRBASHRC )
-sed -i '1d' $LCOPYOFRBASHRC
+# Purpose of below is to get into default dir, probably a home of the user, whatever is set to 
+# there on remote host, then figure it out and as second step, grab user .bash_profile file 
+# to use its content as a first part in the superceeding final rcfile
+ssh -q  "$C2V" 'pwd ; if [ -r .bash_profile ]; then cat .bash_profile; else echo "# .bash_profile " ;fi' 2>&1 > $LCOPYOFBASHPROFILE || { echo Could not connect to ["$C2V"], see details below ; ssh  $C2V ; exit 2; }
+RDEFAULTWD=$( head -n 1  $LCOPYOFBASHPROFILE )
+sed -i '1d' $LCOPYOFBASHPROFILE
 
 # Remote dir for particular session where the Guard is set first
 # then derived session share it
 SUSER=$(id -u)
+
+
+RMIMIC=${ONTO4_MIMIC:-vifm}
 export REMOTE_SESSION_RCDIR=${RDEFAULTWD}/.config/vifm/var/.rcof$(cat /etc/machine-id).${SUSER}.x86_64
+export REMOTE_SESSION_RCDIR=${RDEFAULTWD}/.local/share/${RMIMIC}/var/.rcof$(cat /etc/machine-id).${SUSER}.x86_64
 
 export RAGGSHRC=${REMOTE_SESSION_RCDIR}/$AGGSHRCBASE
 
@@ -672,6 +689,11 @@ FSELFBASENAME="${0##*/}"
 # [[ "${XJJ_FINDEPTH}" ]] && FOPT="$FOPT -maxdepth $XJJ_FINDEPTH"
 
 export RSHEV="export LESSKEY=${REMOTE_SESSION_RCDIR}/.vim/.less;export SSHVIMRP=$RVIMRP;export VIMINIT=source\ $RINCVIMINT_SRC;export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=vim"
+# export RSHEV="export LESSKEY=${REMOTE_SESSION_RCDIR}/.vim/.less
+#               export SSHVIMRP=$RVIMRP
+#               export VIMINIT=source\ $RINCVIMINT_SRC
+#               export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white
+#               export EDITOR=vim"
 
 
 ##VXTODO {} for view in exec cannot handle space in filename - need to figure out the proper escaping for execute of terminal + exec + remote command
@@ -713,8 +735,14 @@ else
    exit 
 fi
 
-# trap to cleanup all temp files with our prefix on exit
+# get value of history file location from the composed rcfile
+# and reuse that value under other variable name RHK3 right away, in this script 
+# at finish, when collection remote history back
+# if that value happens to have a tilda, resolve it to the remote default dir 
+# detected earlier, as it is likely home dir which tilda means also
 source <(grep '^HISTKEEP3=' "${LSHELL_AUXRC}"|sed 's/HISTKEEP3/RHK3/'|sed "s|~|$RDEFAULTWD|")
+# RHK3 is set now, can be used in trap
+# trap to cleanup all temp files with our prefix on exit
 trap finish  exit
  
 

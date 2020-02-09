@@ -1,12 +1,18 @@
 # vim: ft=sh
 THISP=$(dirname $BASH_SOURCE)
 
-
+# Dir to keep history file supposed to be set permanently
+# unlike the dynamic rcfile, thus it cannot be bound to THISP
+# as the latter gets removed at the end of the session
 HISTKEEP3=~/.config/vifm/vifmhist
 HISTKEEP3DIR=$(dirname $HISTKEEP3)
-HISTKEEP3IGNORE=${THISP}/.rdotme/.hk3.ignore
+RDOTMEBASE=.rdotme
 
-export MC_HOME=${THISP}/.rdotme/mchome
+# dotfiles dir can and is be bound to the THISP
+# the nature of THISP is only be alive as long as there are live sessions
+HISTKEEP3IGNORE=${THISP}/${RDOTMEBASE}/.hk3.ignore
+
+export MC_HOME=${THISP}/${RDOTMEBASE}/mchome
 # since Version 4.8.19 of mc 
 export MC_PROFILE_ROOT=$MC_HOME
 
@@ -209,10 +215,10 @@ keep_hist_there() {
   if [[ ${NLCOUNT:-1} -gt 2 ]] ; then 
     BMUL="#BOL_MULTI: "
     EMUL=" #:EOL_MULTI"
-    { echo "$BMUL" ; cat - <<<"$LASTC" ; } | grep -v --file  ${HISTKEEP3IGNORE} | grep -v --fixed-strings --file $FLK |
+    { echo "$BMUL" ; cat - <<<"$LASTC" ; } | grep -v --file  ${HISTKEEP3IGNORE} | grep -v -x --fixed-strings --file $FLK |
     sed 's/^[[:space:]]*[0-9]*[[:space:]]*//g'|tr '\n' ' '  >>${HISTKEEP3}; echo "$EMUL" >>${HISTKEEP3}
   else
-    cat - <<<"$LASTC" | grep -v --file  ${HISTKEEP3IGNORE} | grep -v --fixed-strings --file $FLK |
+    cat - <<<"$LASTC" | grep -v --file  ${HISTKEEP3IGNORE} | grep -v -x --fixed-strings --file $FLK |
     sed 's/^[[:space:]]*[0-9]*[[:space:]]*//g'  >>${HISTKEEP3};
   fi
 
@@ -292,10 +298,10 @@ function ak_fingerprints() {
 xsudo _dryrun
 # set +x 
 [[ "${_sudlim102:-0}" -eq 1 ]] && alias sudo='xsudo "$@"'
-[[ -f ${THISP}/.rdotme/.bash-preexec.sh ]] && source ${THISP}/.rdotme/.bash-preexec.sh
+[[ -f ${THISP}/${RDOTMEBASE}/.bash-preexec.sh ]] && source ${THISP}/${RDOTMEBASE}/.bash-preexec.sh
 preexec_functions+=(keep_hist_there)
 
-[ -f ${THISP}/.rdotme/key-bindings.bash ] && source ${THISP}/.rdotme/key-bindings.bash
+[ -f ${THISP}/${RDOTMEBASE}/key-bindings.bash ] && source ${THISP}/${RDOTMEBASE}/key-bindings.bash
 
 # export -f keep_hist_there ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain
 export -f ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain ak_fingerprints 
