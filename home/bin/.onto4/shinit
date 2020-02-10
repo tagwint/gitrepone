@@ -1,0 +1,17 @@
+# this is to be sourced from shell, e.g. bashrc
+# vim: set ft=sh:
+
+ONTO4_LSHARE=~/.local/share/onto4
+
+# export ONTO4_DSSEBOU=${ONTO4_LSHARE}/ssebou
+export ONTO4_DSSEBOU=~/bin/ssebou
+
+export ONTO4_DRCMDHIST=${ONTO4_LSHARE}/histkeep
+
+export ONTO4_DVIMRP=${ONTO4_DSSEBOU}/.vim
+
+export ONTO4_VIMINIT="source $ONTO4_DVIMRP/vimrc.inc"
+
+export ONTO4_DROAMBINS=${ONTO4_DSSEBOU}/bin
+
+[ -x $ONTO4_DRCMDHIST ] || mkdir -p $ONTO4_DRCMDHIST 2>/dev/null
