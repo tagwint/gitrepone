@@ -1,0 +1,68 @@
+let s:current_file=expand("<sfile>")
+"echo "Current file is " . s:current_file
+let s:inc_file = s:current_file . ".inc"
+"echo "Inc file is " . s:inc_file
+
+execute 'source ' s:inc_file
+
+
+" let s:inctest_file = s:current_file . ".inctest"
+" execute 'source ' s:inctest_file
+" <<< diff of text fragments https://www.vim.org/scripts/script.php?script_id=5350
+" set nowrap
+" set number
+" scriptencoding utf-8
+" set encoding=utf-8
+" set timeout timeoutlen=1000 ttimeoutlen=200
+" set <F23>=kj
+" set listchars=eol:¬,tab:>-,extends:>,precedes:<,trail:·
+" 
+" inoremap <F23> <C-c><Right>
+" cnoremap <F23> <C-c>
+" vnoremap <F23> <C-c>
+" 
+" 
+" nmap <silent> ,/ :nohlsearch<CR>
+" nnoremap <F5> "=strftime("%c")<CR>P
+" inoremap <F5> <C-R>=strftime("%c")<CR>
+" cmap w!! w !sudo tee % >/dev/null
+" 
+"""""""let &rtp=$SSHVIMRP.','.&rtp
+" "color src2
+execute 'colorscheme '.$VIMCOLOS
+" "nnoremap <silent> \z :setlocal foldexpr=(getline(v:lnum)=~@/)?0:(getline(v:lnum-1)=~@/)\\|\\|(getline(v:lnum+1)=~@/)?1:2 foldmethod=expr foldlevel=0 foldcolumn=2<CR>
+" 
+" 
+" ":imap oi <C-c><Right>
+
+
+
+
+
+" This use xmlstarlet as xml formatter.
+" -t for using tabulations
+" au FileType xml setlocal equalprg=xmlstarlet\ fo\ -t\ 2>/dev/null
+" -n N to use N spaces
+au FileType xml setlocal equalprg=xmlstarlet\ fo\ -s\ 2\ 2>/dev/null
+
+" http://stackoverflow.com/a/32154822
+augroup XML
+    autocmd!
+    autocmd FileType xml setlocal foldmethod=indent foldlevelstart=999 foldminlines=0
+augroup END
+
+" This eliminates  "Press ENTER or type command to continue" message for scp://host//path/file 
+let g:netrw_silent = 1
+
+set statusline+=%#warningmsg#
+" set statusline+=%{SyntasticStatuslineFlag()}
+set statusline+=%{exists('g:loaded_syntastic_plugin')?SyntasticStatuslineFlag():''}
+set statusline+=%*
+
+let g:syntastic_always_populate_loc_list = 1
+let g:syntastic_auto_loc_list = 1
+let g:syntastic_check_on_open = 1
+let g:syntastic_check_on_wq = 0
+"
+
+autocmd FileType dosbatch  setlocal commentstring=::\ %s
