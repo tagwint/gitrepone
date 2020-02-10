@@ -360,7 +360,7 @@ PrepIncs () {
 # vim: ft=sh
   echo \$\$>>"${SIBLING_SHELL_COUNTER}"
   export INCC="\$(date)"
-  export MYVIFMRC=$REMOTE_SESSION_RCDIR/${BINBASE}/vifmrc
+  export MYVIFMRC=$REMOTE_SESSION_RCDIR/${RDOTMEBASE}/vifmrc
   if [ ! -f "$REMOTE_SESSION_RCDIR/${BINBASE}/ush" ] ;then
     echo '/bin/bash --rcfile <( cat ' $RAGGSHRC '; echo cd "\$@" )' >$REMOTE_SESSION_RCDIR/${BINBASE}/ush
     chmod 0755 $REMOTE_SESSION_RCDIR/${BINBASE}/ush
@@ -554,21 +554,25 @@ export SELF_TMP_DIR=$(mktemp -d "/tmp/d_${TMPFX}.XXXXXX")
 # it supposed to be added to the existing, if the latter exist, and that must exist - default or whatever set on top
 # our SSHVIMR goes toppest
 
+SSHVIMRP=${ONTO4_DVIMRP:-~/.vim}
 export LINCVIMINT_SRC=$SSHVIMRP/vimrc.inc
 # that inc above uses SSHVIMRP variable inside so the name SSHVIMRP is kind of reserved, you'd better stick with it
 
 # an include rc file to be added(sourced) to the finally composed --rcfile of the remote bash session
-export LSHELL_AUXRC=${thisdir}/.rsshrc
+
+export LSHELL_AUXRC=${ONTO4_DSSEBOU}/.rsshrc
 export _TSTMP=$(date +"%g%m%d%H%M%S")
-# reuse RDOTEMEBASE value from aux rc file here
+# reuse RDOTMEBASE value from aux rc file here
 # to have it through the same name variable defined once there
-source <(grep '^RDOTEMEBASE=' "${LSHELL_AUXRC}")
+source <(grep '^RDOTMEBASE=' "${LSHELL_AUXRC}")
 
 
 # bins to transfer, where to get them from 
-#ONTO4_DPAYLOAD
-export LBIN=${thisdir}/.rbin
-export LDOTMES=${thisdir}/${RDOTMEBASE:-.rdotme}
+
+export LBIN=${ONTO4_DROAMBINS}
+
+export LDOTMES=${ONTO4_DSSEBOU}/${RDOTMEBASE:-.rdotme}
+# export LDOTMES=${thisdir}/${RDOTMEBASE:-.rdotme}
 export BINBASE=$(basename $LBIN)
 
 # name of file to be used as an aggregated rcfile
@@ -630,7 +634,7 @@ P2=$2
       i) INTERACTIVE=1
 	   ;;
       *) FOPT="\( -type  f -o  -type l \)"
-            RDIR="$P2"
+            RDIR="${P2:-${RDEFAULTWD}}"
 	   ;;
   esac
 
@@ -688,8 +692,8 @@ FSELFBASENAME="${0##*/}"
 # [[ "${FSELFBASENAME:0:1}" == "f" ]] && FOPT="$FOPT -type f"
 # [[ "${XJJ_FINDEPTH}" ]] && FOPT="$FOPT -maxdepth $XJJ_FINDEPTH"
 
-export RSHEV="export LESSKEY=${REMOTE_SESSION_RCDIR}/.vim/.less;export SSHVIMRP=$RVIMRP;export VIMINIT=source\ $RINCVIMINT_SRC;export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=vim"
-# export RSHEV="export LESSKEY=${REMOTE_SESSION_RCDIR}/.vim/.less
+export RSHEV="export LESSKEY=${REMOTE_SESSION_RCDIR}/${RDOTMEBASE}/.less;export SSHVIMRP=$RVIMRP;export VIMINIT=source\ $RINCVIMINT_SRC;export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=vim"
+# export RSHEV="export LESSKEY=${REMOTE_SESSION_RCDIR}/${RDOTMEBASE}/.less
 #               export SSHVIMRP=$RVIMRP
 #               export VIMINIT=source\ $RINCVIMINT_SRC
 #               export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white
