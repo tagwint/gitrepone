@@ -595,6 +595,12 @@ ssh -q  "$C2V" 'pwd ; if [ -r .bash_profile ]; then cat .bash_profile; else echo
 RDEFAULTWD=$( head -n 1  $LCOPYOFBASHPROFILE )
 sed -i '1d' $LCOPYOFBASHPROFILE
 
+BVER=$(ssh -q  "$C2V" 'echo $BASH_VERSION|awk -F. "{print \$1}"')
+[[ "${BVER:-0}" -lt 4 ]] && { >&2 echo "$C2V :Unsupported bash version $BVER" ; exit -1 ; }
+
+
+
+
 # Remote dir for particular session where the Guard is set first
 # then derived session share it
 SUSER=$(id -u)
