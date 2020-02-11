@@ -108,7 +108,7 @@ endif
 " Set custom status line look
 
 set statusline=" Hint: %z%= %A %10u:%-7g %15s %20d |SelSize: %E"
-let &statusline = $HOSTNAME . &statusline
+let &statusline = $HNIP . $HOSTNAME . &statusline
 " ------------------------------------------------------------------------------
 
 " :mark mark /full/directory/path [filename]
@@ -365,6 +365,7 @@ filextype */
         \ {View in thunar}
         \ Thunar %f &,
 
+filetype * less -r
 " Syntax highlighting in preview
 "
 " Explicitly set highlight type for some extensions
@@ -422,10 +423,11 @@ set vifminfo=dhistory,chistory,state,tui,shistory,
 
 " Sample mappings
 
-" Start shell in current directory, in-place or in a new tmux pane if running
-" from under tmux
-nnoremap s :if  $TMUX != '' 
-		\| :tpane
+" Start shell in current directory
+" nnoremap s :shell<cr>
+command ush ush %d
+nnoremap s :if  $HISTKEEP3 != ''  
+                \| :ush
 		\|:else
 		\| :shell
 		\|:endif<cr>
@@ -484,7 +486,17 @@ nnoremap <f8> :delete<cr>
 command vv vv
 nnoremap ,, :!vv <cr>
 
+nnoremap ,b :set viewcolumns=-{name}..,20{}.<cr>
+nnoremap ,d :set viewcolumns=-{name}.,10{perms},12{uname},-7{gname},10{size}.,20{mtime}<cr>
+
 " ------------------------------------------------------------------------------
+
+nnoremap <a-t>     :if &viewcolumns == '-{name},{mtime},7{size},12{perms}' 
+		\|    :set viewcolumns='-{name}' 
+		\| :else 
+		\|    :set viewcolumns='-{name},{mtime},7{size},12{perms}'
+		\| :endif <cr>
+
 
 " Various customization examples
 
