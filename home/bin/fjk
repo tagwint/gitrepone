@@ -446,9 +446,11 @@ callvifm () {
 finish () {
     local STMP RHLOC
     [[ -n "${GUARDPID}" ]] && { 
-      RHLOC=${ONTO4_DRCMDHIST:-/tmp}/$RCONN
+      RHLOC=${ONTO4_DRCMDHIST:-/tmp}/${RCONN}
       echo "Saving history from ${RHK3:-oops} to $RHLOC .."
-      ssh -q $RCONN "cat $RHK3 | gzip " | gzip -d >>$RHLOC
+      ssh -q $RCONN "cat $RHK3   | sort -u | grep -v '^#_#' | gzip " | gzip -d >$RHLOC
+      echo "Saving history from ${RHK3:-oops}.vimru to ${RHLOC}.vimru .."
+      ssh -q $RCONN "cat ${RHK3}.vimru | gzip " | gzip -d >${RHLOC}.vimru
       echo -n "Taking off the guard $GUARDPID ...";  kill -TERM ${GUARDPID}
     }
     # echo - n PID of self is $$
