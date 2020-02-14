@@ -1,0 +1,16 @@
+#!/bin/bash
+if [[ ${1:-NooNxe} =~  ^/tmp/bash-fc\..* ]] 
+then 
+  # CtrlXCtrE was used
+  cat $1 >> /tmp/ctrlXE
+else 
+  if [[ ${1:-NooNxe} =~  ^/tmp/tmp\.* ]] 
+  then
+   :
+  else
+    LOCALVIMHIST=${ONTO4_DRCMDHIST:-/tmp}/${HOSTNAME}
+    VIMHIST=${HISTKEEP3:-${LOCALVIMHIST}}.vimru
+    echo "$(date --iso-8601='seconds') ${1:-Nofile}">>${VIMHIST}
+  fi
+fi
+

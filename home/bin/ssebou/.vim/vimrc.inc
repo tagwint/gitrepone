@@ -315,15 +315,11 @@ if &diff
     endfunction
 endif
 
-" this is a probe to keep in history commands done with CtrlXE
-" by saving buffer content on leaving the buffer
-" the commands are kept in a temp buffer with a reserved prefix
-" file name in temp dir, and this is used to distinguish
-" that CtrlXE was used to open by ~/bin/chkvimfile
-" it seems however that this is not required and the commands 
-" run by using CtrlXE got to the history w/o this extra handling
-" TODO: check if that's true
+" tracing of all vim-visited files by passing the name to 
+" chkvimfile scipt available on path
+" there it can be processed depending on file path
+" that path may be specially predefined by the way vim was called (e.g. CtrlXCtrlE creates a file in /tmp 
+" mutt has its own path etc. )
 
-" autocmd BufWinLeave * silent !~/bin/chkvimfile %:p 
-" autocmd BufWinLeave * silent execute "!~/bin/chkvimfile %:p 2>&1" | redraw!
+autocmd BufWinLeave * silent execute "!chkvimfile %:p 2>&1" | redraw!
 
