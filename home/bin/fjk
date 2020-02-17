@@ -378,6 +378,7 @@ PrepIncs () {
     return \$(wc -l <$SIBLING_SHELL_COUNTER) 
   } 
   trp() { rmc &&  [[ -d ${REMOTE_SESSION_RCDIR:-.N3vaRegzZ} ]] && { 
+    h3sq # deduplicate command history entries
     rm -f  ${SIBLING_SHELL_COUNTER:-prevent_accidental_deletion}
     rm -rf ${REMOTE_SESSION_RCDIR:-prevent_accidental_deletion} 
     }   
@@ -448,7 +449,7 @@ finish () {
     [[ -n "${GUARDPID}" ]] && { 
       RHLOC=${ONTO4_DRCMDHIST:-/tmp}/${RCONN}
       echo "Saving history from ${RHK3:-oops} to $RHLOC .."
-      ssh -q $RCONN "cat $RHK3   | sort -u | grep -v '^#_#' | gzip " | gzip -d >$RHLOC
+      ssh -q $RCONN "cat $RHK3   | sort -u | sed 's/^#_# //' | gzip " | gzip -d >$RHLOC
       echo "Saving history from ${RHK3:-oops}.vimru to ${RHLOC}.vimru .."
       ssh -q $RCONN "cat ${RHK3}.vimru | gzip " | gzip -d >${RHLOC}.vimru
       echo -n "Taking off the guard $GUARDPID ...";  kill -TERM ${GUARDPID}
