@@ -1,9 +1,5 @@
 let s:current_file=expand("<sfile>")
 
-let s:colorun_file = s:current_file . ".colorun"
-if filereadable(s:colorun_file)
-   exe 'source' s:colorun_file
-endif
 
 " Force this file to be of vim filetype
 " vim: set ft=vim:
@@ -46,7 +42,13 @@ cmap w!! w !sudo tee % >/dev/null
 
 execute 'colorscheme torte'
 let &rtp=$SSHVIMRP.','.&rtp
+" execute 'colorscheme PaperColor'
 "execute 'colorscheme '.$VIMCOLOS
+
+let s:colorun_file = s:current_file . ".colorun"
+if filereadable(s:colorun_file)
+   exe 'source' s:colorun_file
+endif
 
 hi link EasyMotionTarget ErrorMsg
 "hi link EasyMotionShade  Comment
