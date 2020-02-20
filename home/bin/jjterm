@@ -14,6 +14,7 @@ GEOP="--geometry=${GXP}x${GYP}"
 GEOS="--geometry=${GXS}x${GYS}"
 TRM="xfce4-terminal $GEOS --command="
 TRM="tilix $GEOS --title=FLLOAT --profile=Molo --command="
+TRM="tilix $GEOS --title=FLLOAT --profile=Molo -e "
 #TRM="lxterminal $GEOS --command="
 #TRM="roxterm $GEOP -e "
 LOG=/tmp/jjterm.log

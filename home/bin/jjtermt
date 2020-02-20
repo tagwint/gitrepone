@@ -14,5 +14,6 @@ export TWIN=
    [ -z "$FWINDTIT" ] || export TWIN="tmux rename-window $FWINDTIT ;"
 }
 
-${TRM}"${TWIN}${TPFX}""$@" >>$LOG 2>&1 &
+# ${TRM}"${TWIN}${TPFX}""$@" >>$LOG 2>&1 &
+${TRM}"${TWIN}${TPFX}""$*" >>$LOG 2>&1 &
 

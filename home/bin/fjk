@@ -88,7 +88,7 @@ handle_action () {
 	    local -r RZIPF="/tmp/${GRABFN}"
 	    local -r LZIPF="${GRABDIR}/${GRABFN}"
 	    local -r RCMD="cd $RDIR && zip  $RZIPF -@"
-	    cat "$FSR" | sed "s/^.*${FZFDLM}//g" | ssh -q "${RCO}" "$RCMD" && scp "${RCO}:$RZIPF" "${LZIPF}" && ssh -q "${RCO}" "rm ${RZIPF}"
+	    cat "$FSR" | sed "s/^.*${FZFDLM}//g" | ssh -q "${RCO}" "$RCMD" && scp "${RCO}:$RZIPF" "${LZIPF}" && ssh -q "${RCO}" "rm ${RZIPF:-NoDisAsster}"
 	    echo "Grabbed to --> ${LZIPF}"
 	    zip -z "${LZIPF}" <<<"USED FZF QUERY:${FZFQUERY}"
 	;;
@@ -197,20 +197,20 @@ edit_emacs () {
 # printf '\u001b[40m A \u001b[41m B \u001b[42m C \u001b[43m D \u001b[0m  VVVVV \n'
 remote_preview () {
   local FFN RURL
-  FFN=${RDIR}$(echo "$*" | awk '{ print $NF }' | sed 's/^....//g')
+  FFN=${RDIR}$(echo "$*" | awk -F/ '{ print $NF }' )
   RURL=${RCONN}:/$FFN
   echo RSYNCable path: $RURL
   # ssh -q $RCONN  "export MIME=\$(file -ib $FFN) ; case \$MIME  in
-  ssh -q $RCONN  "export MIME=\$(file -ib $FFN) ; case \$MIME  in
+  ssh -q $RCONN  "export MIME=\$(file -ib \"$FFN\") ; case \$MIME  in
 	text*|application/xml*)
-          NOL=\$(cat $FFN|wc -l); echo Lines: \$NOL 
-	if [[ $FFN =~ ^.*\.log$|^.*/.*log\..*$|^.*/log/.*$|^.*/logs/.*$ ]] ;then
-	    ( ( tail -n 4 $FFN | tac ) ; echo --------------- \<\< TAIL reversed, ERRORs in reverse order below:; ( cat -n $FFN | egrep 'ERROR' | tac ) ;echo  .. skipped in preview  ........; echo ----------- HEAD \>\> ;  head -n 4 $FFN ) 
+          NOL=\$(cat "$FFN"|wc -l); echo Lines: \$NOL 
+	if [[ "${FFN// /_}" =~ ^.*\.log$|^.*/.*log\..*$|^.*/log/.*$|^.*/logs/.*$ ]] ;then
+	    ( ( tail -n 4 "$FFN" | tac ) ; echo --------------- \<\< TAIL reversed, ERRORs in reverse order below:; ( cat -n "$FFN" | egrep 'ERROR' | tac ) ;echo  .. skipped in preview  ........; echo ----------- HEAD \>\> ;  head -n 4 "$FFN" ) 
           else
             if [[ \$NOL -lt 800 ]] ; then 
-              cat $FFN
+              cat "$FFN"
             else
-	      ( ( head -n 20 $FFN | tac ) ; echo --------------- \<\< HEAD  .. skipped in preview  ........ Tail \>\> ;  tail -n 14 $FFN ) 
+	      ( ( head -n 20 "$FFN" | tac ) ; echo --------------- \<\< HEAD  .. skipped in preview  ........ Tail \>\> ;  tail -n 14 "$FFN" ) 
             fi 
           fi 
 	;;
@@ -221,8 +221,8 @@ remote_preview () {
            echo EMPTY FILE
 	;;
 	*) 
-          echo mimie is \$MIME , do not really know how to preview, using hexdump
-	  ( hexdump -C "${FFN}"| head -n 5 ; echo \<\< Head\[  .. skipped in preview  .......... \]Tail \>\> ;hexdump -C "${FFN}"| tail -n 4 ) 
+          echo mime is \$MIME , do not really know how to preview, using hexdump
+	  ( hexdump -C \"${FFN}\"| head -n 5 ; echo \<\< Head ) 
 	;;
 	esac
   "
@@ -239,26 +239,29 @@ view_less () {
   local LTERM
   # trim meta info on the left, all cols till delimiter
   trimmeta $FIN $FTMP
-  cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
+  cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g" > $FTMP2
   # ${TRM} "less ${FTMP2}"
   echo Viewing files ...
   VID=0
   LTERM=$TRM
   [ "$TMUX" ] && LTERM=$TTERM
-  cat $FTMP2 | while read RABSP
+  cat $FTMP2   |  while read RABSP
   do
       (( VID++ ))
       export FPANETIT="scp://$RCONN//$RABSP"
       export FWINDTIT="V${VID}:$(basename $RABSP)"
+      export QRFN=$(printf "%q" "$RABSP")
       # TODO: in TMUX, if file path specified wrongly, it does not stop showing errror
       # wrongly specify is only possible when 1st parameter to the $0 is not an existing path but something relative but matching due to ignore of sequential slashes
-      FULLCMD="bash --rcfile <( cat ${RAGGSHRC} ;
-               echo less -RMJS $RABSP ; echo 'if [ \$? -gt 0 ] ; then echo SEE ERROR ABOVE. Press enter. ; read; fi; '
-               echo exit )"
+      
+      FULLCMD=$(printf "%q" "bash --rcfile <( cat ${RAGGSHRC} ;
+               echo less -RMJS \"$QRFN\" ; echo 'if [ \$? -gt 0 ] ; then echo SEE ERROR ABOVE. Press enter. ; read; fi; '
+               echo exit )" )
       # FULLCMD="bash --rcfile <( cat ~/.bashrc $REMOTE_SESSION_RCDIR/$(basename $RSHELL_RC_INC_EXPAND) $REMOTE_SESSION_RCDIR/$(basename $RSHELL_RC_INC_NOEXPAND); 
       #          echo less -RMJS $RABSP ; echo 'if [ \$? -gt 0 ] ; then echo SEE ERROR ABOVE. Press enter. ; read; fi; '
       #          echo exit )"
-      ${LTERM}  "ssh -q -tt $RCONN \" $FULLCMD \" "
+      # ${LTERM}  "ssh -q -tt $RCONN \" $FULLCMD \" "
+      ${LTERM}  ssh -q -tt $RCONN "eval $FULLCMD " 
   done
 }
 ## echo \"if [ \$? -gt 0 ] ; then echo SEE ERROR ABOVE. Press enter. ; read; fi; \"
@@ -312,7 +315,7 @@ stat_them () {
   ${LTERM} "less ${FOUT}"
 }
 
-    
+
 grab_them () {
   #set -x
   echo Grabbing selected ...
@@ -332,7 +335,7 @@ grab_them () {
   local -r LZIPF="${GRABDIR}/${GRABFN}"
   local -r RCMD="cd $RDIR && zip  $RZIPF -@"
   # list is feed to the zip on remote host 
-  cat "$FTMP" | ssh -q ${RCONN} "$RCMD" && scp "${RCONN}:$RZIPF" $LZIPF
+  cat "$FTMP" |  ssh -q ${RCONN} "$RCMD" && scp "${RCONN}:$RZIPF" $LZIPF
   zip -z "${LZIPF}" <<<"USED FZF QUERY:${FZFQUERY}"
   echo "Grabbed to --> ${LZIPF}" >$FOUT
   echo "===================================" >>$FOUT
@@ -782,7 +785,7 @@ else
   echo GuardPID=$GUARDPID 
 fi 
 
-
+	 # --nth=-1 \
  ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR | 
          fzf -m  \
 	 --color=dark \
@@ -790,7 +793,6 @@ fi
 	 --header="view:f3 edit:f4 zgrab:f5 stat:f6 hbin:f7 vfm:alt-f shell:M-m cp2clip:M-(i|r|v) alt-t:toggle_preview" \
 	 --prompt="${RCONN}[${RDIR}]>" \
 	 --expect="alt-h,f8,f9,alt-g" \
-	 --nth=-1 \
 	 --bind "alt-s:select-all" \
 	 --bind "alt-d:deselect-all" \
 	 --bind "alt-j:jump" \
