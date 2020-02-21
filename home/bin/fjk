@@ -846,8 +846,8 @@ case $KEYPR in
 esac
 # redfining outcome after filtering expected keys out
 SFN="$PLOAD"
-NOFL=$(wc -l  "$FPAYLOAD")
-NOFW=$(wc -w  "$FPAYLOAD")
+NOFL=$(cat "$FPAYLOAD" |wc -l  )
+NOFW=$(cat "$FPAYLOAD" |wc -w  )
 
 [[ "$NOFL" -lt "$NOFW" ]] && { echo "WARNING: FILE NAME(S) SEEM TO CONTAIN SPACES!" ; exit 1; }
 
