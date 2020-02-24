@@ -448,13 +448,19 @@ callvifm () {
 }
 
 finish () {
-    local STMP RHLOC
+    local STMP SAVERCH SAVEVIH RVIMHIST DEFREMOTEVIMHISTEXT
+    DEFREMOTEVIMHISTEXT=vimru # default extention for files to keep file edit history, those files will be grabbed on session exit
+    # local mirror files may have some other extention if set in ONTO4_HEEXT
+    # if not set, then the same extention is used
     [[ -n "${GUARDPID}" ]] && { 
-      RHLOC=${ONTO4_DRCMDHIST:-/tmp}/${RCONN}
-      echo "Saving history from ${RHK3:-oops} to $RHLOC .."
-      ssh -q $RCONN "cat $RHK3   | sort -u | sed 's/^#_# //' | gzip " | gzip -d >$RHLOC
-      echo "Saving history from ${RHK3:-oops}.vimru to ${RHLOC}.vimru .."
-      ssh -q $RCONN "cat ${RHK3}.vimru | gzip " | gzip -d >${RHLOC}.vimru
+      SAVERCH=${ONTO4_DRCMDHIST:-/tmp}/${RCONN}.chist # where to save cmd history got from remote locally 
+      SAVEVIH=${ONTO4_DRCMDHIST:-/tmp}/${RCONN}.${ONTO4_HEEXT:-${DEFREMOTEVIMHISTEXT}} # where to save vim mru history got from remote locally 
+      RVIMHIST=${RHK3:-oops}.${DEFREMOTEVIMHISTEXT}
+      RCMDHIST=${RHK3:-oops}
+      echo "Saving command history from ${RCMDHIST} to $SAVERCH .."
+      ssh -q $RCONN "cat ${RCMDHIST}  | sed 's/^#_# //;s/\s*$//' | sort -u | gzip " | gzip -d >$SAVERCH
+      echo "Saving file edit history from ${RVIMHIST} to ${SAVEVIH} .."
+      ssh -q $RCONN "cat ${RVIMHIST} | gzip " | gzip -d >${SAVEVIH}
       echo -n "Taking off the guard $GUARDPID ...";  kill -TERM ${GUARDPID}
     }
     # echo - n PID of self is $$

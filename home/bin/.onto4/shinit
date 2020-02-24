@@ -14,4 +14,8 @@ export ONTO4_VIMINIT="source $ONTO4_DVIMRP/vimrc.inc"
 
 export ONTO4_DROAMBINS=${ONTO4_DSSEBOU}/bin
 
+# yes, you CAN override the file extention for keeping history of edited files used remotely
+# but there seem not much sense in that
+# export ONTO4_HEEXT=overridden444
+
 [ -x $ONTO4_DRCMDHIST ] || mkdir -p $ONTO4_DRCMDHIST 2>/dev/null
