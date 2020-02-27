@@ -31,7 +31,7 @@ export M_LVL=$((M_LVL + 1))
 echo starting with M_LVL = $M_LVL
 
 # export MYVIFMRC=$BASH_SOURCE/vifmrc
-OSV=$(cat /etc/redhat-release | grep -o [0-9\.]* | awk -F. ' { print $1 } ')
+OSV=$(cat /etc/redhat-release | grep -o '[0-9\.]*' | awk -F. ' { print $1 } ')
 
 VEXE=vifm
 [[ "${OSV:-7}" == "6" ]] && VEXE=vifm6
