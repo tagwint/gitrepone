@@ -1,6 +1,8 @@
 #!/bin/bash
-export H2F=${H2:-~/.histkeep2}
+export H2F="${ONTO4_MASTERCMDHIST:-~/.histkeep2}"
+export H2REMOVALS="${ONTO4_MASTERCMDHIST_I2REMOVE?Undefined var to keep lines to remove from hist}"
 H2BAKDIR=~/.bak/cmdhist
+NB4=$(cat $H2F| wc -l)
 mkdir -p ${H2BAKDIR}
 # remove all kills with numerical PIDs
 BKSUFF=$(date "+%Y%m%d_%H%M%S")
@@ -8,8 +10,20 @@ sed -i.${BKSUFF} -e '/kill -.*[[:digit:]]*$/d' -e '/ooo.Bc,/d' $H2F
 [ -f ${H2F}.${BKSUFF} ] && mv ${H2F}.${BKSUFF} $H2BAKDIR/
 # remove duplicates w/o sorting
 cat $H2F | awk '!x[$0]++' | sponge $H2F
-# remove lines marked with echo #XXX<something> and <something> -lines
-grep -Fvxf <(sed '/^echo #XXX/!d' $H2F | sed 's/^echo #XXX//') $H2F | sed '/^echo #XXX/d' | sponge $H2F
-# means if you do not want some line in history, you should :
-# get it from history to command line, edit by prepending with 'echo #XXX' and enter
-# this way you tell the purifyier to remove them once purify runs again
+## *** this will squeeze lines marked by CtrlX earlier, they are gathered in ${ONTO4_MASTERCMDHIST_I2REMOVE}
+# get line numbers of lines makred as to be removed 
+grep -nFxf <(grep -v '^DONEEARLIER' ${H2REMOVALS}) ${H2F} | # grepping lines matching to toberemoved lines
+awk -F: '{ print $1 }'                                    | # prinitg out line numbers only
+sed 's/$/d/'                                              | # forming sed script where each line is like 123d
+sed -f- -i ${H2F}                                           # accepting sed deletion script from stdin
+NAFT=$(cat $H2F| wc -l)
+
+echo $(( NB4 - NAFT )) lines removed
+
+## commented by ## below is obsolete since you can CtrlX on history items now and that will be handled by ## ***  above
+## # remove lines marked with echo #XXX<something> and <something> -lines
+## grep -Fvxf <(sed '/^echo #XXX/!d' $H2F | sed 's/^echo #XXX//') $H2F | sed '/^echo #XXX/d' | sponge $H2F
+## # means if you do not want some line in history, you should :
+## # get it from history to command line, edit by prepending with 'echo #XXX' and enter
+## # this way you tell the purifyier to remove them once purify runs again
+sed -i 's/^/#DONEEARLIER: /' ${ONTO4_MASTERCMDHIST_I2REMOVE}

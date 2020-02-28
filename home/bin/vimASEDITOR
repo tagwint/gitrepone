@@ -16,7 +16,7 @@ if [[ "${FC_TMPY:-NO}" == "YES" ]]; then
   nlines=$(cat "$1"|sed '/^$/d'|wc -l )
   if [[ "$nlines" -ge 1 ]] ; then
     # NOT only for one-liners, keep it in history too
-    cat "$1"|sed '/^$/d' >>~/.histkeep2
+    cat "$1"|sed '/^$/d' >>"${ONTO4_MASTERCMDHIST:-~/.histkeep2}"
   fi 
 
   # Save current process ID for the subshell below.
