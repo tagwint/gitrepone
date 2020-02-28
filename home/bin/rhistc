@@ -1,0 +1,53 @@
+#!/bin/bash
+FSELLINES=/tmp/fzf_$$
+touch $FSELLINES
+
+finish () {
+ local T
+ T=${FSELLINES:-NoHarm_caused}
+ rm $T 2>/dev/null
+}
+
+trap finish  exit
+
+
+[[ -z "$1" ]] || HSELOPT=( -q "$*")
+CHISTEXT=${ONTO4_CHISTEXT:-chist}
+CHISTMASK="*.${CHISTEXT}"
+[ -x  ${ONTO4_DRCMDHIST:-UndefINED} ] || { echo 'ONTO4_DRCMDHIST is either undefined or inaccessible ';  exit ; }
+pushd ${ONTO4_DRCMDHIST} >/dev/null
+( grep -H . ${CHISTMASK} ) | sort --field-separator=: -k 2 |
+ # fzf  +s "${HSELOPT[@]}" 
+ fzf --header="view:f3 edit:f4 cpy2clip:alt-i" --expect="f3,f4,f5,enter" \
+     --bind "alt-i:execute(    printf \"%s\n\" {+} | xclip -selection clipboard )" \
+     --no-sort --tac  "${HSELOPT[@]}" >"$FSELLINES"  
+popd >/dev/null
+KEYPR=$(sed -n '1p' "$FSELLINES" )
+RHOST=$(sed -n '2p' "$FSELLINES" | sed 's/'.${CHISTEXT}.*$'/ /' )
+# echo RHO = $RHOST
+if [ "$RHOST" == "$HOSTNAME" ]
+then 
+	VIMURL="vim $(sed -n '2p' "$FSELLINES" | sed 's|^\(.*\)\.'$CHISTEXT':\(.* \)\(.*\)$|\3|')"
+	LESSURL=$(sed -n '2p' "$FSELLINES" | sed 's|^\(.*\)\.'$CHISTEXT':\(.* \)\(.*\)$|less -R \3|')
+	GOURL=$VIMURL
+else
+	VIMURL="vim $(sed -n '2p' "$FSELLINES" | sed 's|^\(.*\)\.'$CHISTEXT':\(.* \)\(.*\)$|scp://\1//\3|')"
+	LESSURL=$(sed -n '2p' "$FSELLINES" | sed 's|^\(.*\)\.'$CHISTEXT':\(.* \)\(.*\)$|ssh -t \1 "VISUAL=vim less -R \3"|')
+	GOURL=$(sed -n '2p' "$FSELLINES" | sed 's|^\(.*\)\.'$CHISTEXT':\(.* \)\(.*\)$|fjk \1 $(dirname \3) i|')
+ 	 RCMD=$(sed -n '2p' "$FSELLINES" | sed 's|^\(.*\)\.'$CHISTEXT':\(.*\)$|\2|')
+fi
+
+# echo GOURL = $GOURL
+
+case $KEYPR in
+    f4) echo $VIMURL
+           ;;
+    f3|enter) echo '#'ssh $RHOST "$RCMD"
+           ;;
+    f5) echo $GOURL
+           ;;
+    *) exit 2
+	   ;;
+esac
+
+
