@@ -1,5 +1,5 @@
 #!/bin/bash
-FSELLINES=/tmp/fzf_$$
+FSELLINES=/tmp/fzfRHISTC_$$
 touch $FSELLINES
 
 finish () {
@@ -49,5 +49,4 @@ case $KEYPR in
     *) exit 2
 	   ;;
 esac
-
 
