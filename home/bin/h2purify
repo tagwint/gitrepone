@@ -26,4 +26,4 @@ echo $(( NB4 - NAFT )) lines removed
 ## # means if you do not want some line in history, you should :
 ## # get it from history to command line, edit by prepending with 'echo #XXX' and enter
 ## # this way you tell the purifyier to remove them once purify runs again
-sed -i 's/^/#DONEEARLIER: /' ${ONTO4_MASTERCMDHIST_I2REMOVE}
+sed -i '/^#DONEEAR/!s/^/#DONEEARLIER: /' ${ONTO4_MASTERCMDHIST_I2REMOVE}
