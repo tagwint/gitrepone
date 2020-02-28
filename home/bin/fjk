@@ -447,6 +447,15 @@ callvifm () {
   ${LTERM} "vfm $TMPSSHF"
 }
 
+squeeze () {
+    local TMPH INPF
+    INPF=$1
+    [[ -r $INPF ]] || return
+    TMPH=$(mktemp "/tmp/sq3XXXXXX")
+    cat $INPF | awk '!x[$0]++' >$TMPH 
+    mv $TMPH $INPF
+}
+
 finish () {
     local STMP SAVERCH SAVEVIH RVIMHIST DEFREMOTEVIMHISTEXT
     DEFREMOTEVIMHISTEXT=vimru # default extention for files to keep file edit history, those files will be grabbed on session exit
@@ -458,9 +467,9 @@ finish () {
       RVIMHIST=${RHK3:-oops}.${DEFREMOTEVIMHISTEXT}
       RCMDHIST=${RHK3:-oops}
       echo "Saving command history from ${RCMDHIST} to $SAVERCH .."
-      ssh -q $RCONN "cat ${RCMDHIST}  | sed 's/^#_# //;s/\s*$//' | sort -u | gzip " | gzip -d >$SAVERCH
+      ssh -q $RCONN "cat ${RCMDHIST}  | sed 's/^#_# //;s/\s*$//' | sort -u | gzip " | gzip -d >>$SAVERCH && squeeze $SAVERCH
       echo "Saving file edit history from ${RVIMHIST} to ${SAVEVIH} .."
-      ssh -q $RCONN "cat ${RVIMHIST} | gzip " | gzip -d >${SAVEVIH}
+      ssh -q $RCONN "cat ${RVIMHIST} | gzip " | gzip -d >>${SAVEVIH} && squeeze $SAVEVIH
       echo -n "Taking off the guard $GUARDPID ...";  kill -TERM ${GUARDPID}
     }
     # echo - n PID of self is $$
