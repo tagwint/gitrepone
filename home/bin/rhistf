@@ -9,7 +9,7 @@ finish () {
 }
 
 trap finish  exit
-set -x
+# set -x
 [[ -z "$1" ]] || HSELOPT=( -q "$*")
 
 [ -x  ${ONTO4_DRCMDHIST:-UndefINED} ] || { echo 'ONTO4_DRCMDHIST is either undefined or inaccessible ';  exit ; }
