@@ -36,13 +36,22 @@ if [ $RHOST == $HOSTNAME ]
 then 
 	VIMURL="vim $(sed -n '2p' "$FSELLINES" | sed 's|^\(.*\)\.'$VIMHISTEXT':\(.* \)\(.*\)$|\3|')"
 	LESSURL=$(sed -n '2p' "$FSELLINES" | sed 's|^\(.*\)\.'$VIMHISTEXT':\(.* \)\(.*\)$|less -R \3|')
+	if [[ "$LESSURL" =~ ^less.*scp://.* ]] 
+        then 
+          LESSURL=$VIMURL
+          SCPHOST=$(echo $LESSURL|sed 's,^.*scp://,,;s,//.*$,,')
+          timeout 3 ssh -q $SCPHOST 'date' || { >&2 echo "Could not connect to [$SCPHOST]" ; exit 2; } 
+        fi
 	GOURL=$VIMURL
 else
+        timeout ssh -q $RHOST 'date' || { >&2 echo "Could not connect to [$RHOST]" ; exit 2; } 
 	VIMURL="vim $(sed -n '2p' "$FSELLINES" | sed 's|^\(.*\)\.'$VIMHISTEXT':\(.* \)\(.*\)$|scp://\1//\3|')"
 	LESSURL=$(sed -n '2p' "$FSELLINES" | sed 's|^\(.*\)\.'$VIMHISTEXT':\(.* \)\(.*\)$|ssh -t \1 "VISUAL=vim less -R \3"|')
 	GOURL=$(sed -n '2p' "$FSELLINES" | sed 's|^\(.*\)\.'$VIMHISTEXT':\(.* \)\(.*\)$|fjk \1 $(dirname \3) i|')
 fi
+echo VIMURL = $VIMURL
 echo GOURL = $GOURL
+echo LESSURL = $LESSURL 
 
 case $KEYPR in
     f4) eval $VIMURL
