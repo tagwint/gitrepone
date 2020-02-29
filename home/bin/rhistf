@@ -30,7 +30,7 @@ ECODE=$?
 
 popd >/dev/null
 KEYPR=$(sed -n '1p' "$FSELLINES" )
-RHOST=$(sed -n '2p' "$FSELLINES" | awk -F.  '{ print $1 }')
+RHOST=$(sed -n '2p' "$FSELLINES" | awk -F:  '{ print $1 }'| sed "s/.$VIMHISTEXT$//")
 echo RHO = $RHOST
 if [ $RHOST == $HOSTNAME ]
 then 
