@@ -197,25 +197,29 @@ edit_emacs () {
 # printf '\u001b[40m A \u001b[41m B \u001b[42m C \u001b[43m D \u001b[0m  VVVVV \n'
 remote_preview () {
   local FFN RURL
-  FFN=${RDIR}$(echo "$*" | awk -F/ '{ print $NF }' )
-  RURL=${RCONN}:/$FFN
+  FFN="${RDIR}$(echo $* | awk -F"$FZFDLM" '{ print $NF }' | sed 's/[^/]*//' )"
+  RURL="${RCONN}:/$FFN"
+  # echo Preview args: $*
   echo RSYNCable path: $RURL
+  # echo RCONN is : $RCONN
+  # echo RDIR is : $RDIR
+  echo FFN is : $FFN
   # ssh -q $RCONN  "export MIME=\$(file -ib $FFN) ; case \$MIME  in
   ssh -q $RCONN  "export MIME=\$(file -ib \"$FFN\") ; case \$MIME  in
 	text*|application/xml*)
-          NOL=\$(cat "$FFN"|wc -l); echo Lines: \$NOL 
+          NOL=\$(cat \"$FFN\"|wc -l); echo Lines: \$NOL 
 	if [[ "${FFN// /_}" =~ ^.*\.log$|^.*/.*log\..*$|^.*/log/.*$|^.*/logs/.*$ ]] ;then
-	    ( ( tail -n 4 "$FFN" | tac ) ; echo --------------- \<\< TAIL reversed, ERRORs in reverse order below:; ( cat -n "$FFN" | egrep 'ERROR' | tac ) ;echo  .. skipped in preview  ........; echo ----------- HEAD \>\> ;  head -n 4 "$FFN" ) 
+	    ( ( tail -n 4 \"$FFN\" | tac ) ; echo --------------- \<\< TAIL reversed, ERRORs in reverse order below:; ( cat -n \"$FFN\" | egrep 'ERROR' | tac ) ;echo  .. skipped in preview  ........; echo ----------- HEAD \>\> ;  head -n 4 \"$FFN\" ) 
           else
             if [[ \$NOL -lt 800 ]] ; then 
-              cat "$FFN"
+              cat \"$FFN\"
             else
-	      ( ( head -n 20 "$FFN" | tac ) ; echo --------------- \<\< HEAD  .. skipped in preview  ........ Tail \>\> ;  tail -n 14 "$FFN" ) 
+	      ( ( head -n 20 \"$FFN\" | tac ) ; echo --------------- \<\< HEAD  .. skipped in preview  ........ Tail \>\> ;  tail -n 14 \"$FFN\" ) 
             fi 
           fi 
 	;;
 	application/zip*)
-           unzip -l "${FFN}" | head -n 8  ;echo ...
+           unzip -l \"${FFN}\" | head -n 8  ;echo ...
 	;;
         inode/x-empty*)
            echo EMPTY FILE
@@ -411,16 +415,25 @@ cat $LAGGSHRC > /tmp/000debug_laggshrc_for_${RCONN}
 
 
 callIshell () {
+  # expected: RDIR defined globally, 1st param is relative to RDIR with an optional '->' delimiter in front
+  # that is removed
+  # everything further than $1 to be interpreded as a command to be started after shell login
   local -r RF=${RDIR%/}/$(echo "$1" | sed  "s/^.*${FZFDLM}//g;s,^./,,g")
-  local -r RD=$(dirname $RF)
+  local -r RD=$(dirname "$RF")
   local LTERM RCMD1 RCMD0 RCMD2 FULLCMD ETRP
   local FULLCMD
+  if [[ -n "$2" ]]; then
+    shift
+    RCMD0="$@"
+    RCMD1=exit
+  else 
+    RCMD0='echo Hello'
+    RCMD1=':'
+  fi
   LTERM=$TRM
   echo Getting to $RCONN ..., Target dir is RD=${RD:-none} 
 
-  # FULLCMD="bash --rcfile <( cat ~/.bashrc $REMOTE_SESSION_RCDIR/$(basename $RSHELL_RC_INC_EXPAND) $REMOTE_SESSION_RCDIR/$(basename $RSHELL_RC_INC_NOEXPAND); echo cd $RD )"
-  FULLCMD="bash --rcfile <( cat ${RAGGSHRC} ; echo cd $RD )"
-
+  FULLCMD="bash --rcfile <( cat ${RAGGSHRC} ; echo cd $RD ; echo $RCMD0; echo $RCMD1 )"
   [[  "${INTERACTIVE:-0}" == "1" ]] && { ssh -q -tt $RCONN "$FULLCMD" ; return ; }
 
   [ $TMUX ] && LTERM=$TTERM
@@ -660,17 +673,27 @@ P2=$2
 	   ;;
       i) INTERACTIVE=1
 	   ;;
+      ic) INTERACTIVE=1
+          shift ;shift 
+          ICMD="$@"
+          ICMD=${ICMD:?"ic option implies a command to exec spiecified"} 
+	   ;;
       *) FOPT="\( -type  f -o  -type l \)"
             RDIR="${P2:-${RDEFAULTWD}}"
 	   ;;
   esac
-
 # Remote directory used globally in subshell and  exported functions
 export RDIR=$(echo $RDIR | sed 's|/*$|/|')   # ensure trailing slash is there and is the only one
 #file name pattern
 #set -x
 PAR3="$3"
-[[ "$PAR3" == "i" ]] && INTERACTIVE=1
+# if i follows a specific path given as 2nd param, interpret that as going to that path still be intaractive
+#
+[[ "$PAR3" == "i" ]] && { 
+ INTERACTIVE=1
+ # RDIR needs to be redefined since the call is done not from fzf but interactively
+ RDIR="${P2:-${RDEFAULTWD}}"  #Actually P2 cannot be undefined here since $3 is
+}
 
 PAR4="$4"
 FNAMEGREPFLTR="| grep ."
@@ -794,7 +817,9 @@ ssh  -q -tt $RCONN "$GUARDCMD" >/dev/null 2>&1 &
 GUARDPID=$!
 
 if [[  ${INTERACTIVE:-0} == "1" ]] ; then 
-  callIshell ${FOPT:-${RDEFAULTWD}}/. 
+  # callIshell ${FOPT:-${RDEFAULTWD}}/. $ICMD  ## Why FOPT here?
+  # RDIR=${RDEFAULTWD} # No need, RDIR defined earlier 
+  callIshell dummyfile $ICMD
   exit 
 else
   echo GuardPID=$GUARDPID 
@@ -827,7 +852,7 @@ fi
 	 --bind "alt-r:execute-multi(    printf \"%s\n\" {}>$PRIMB  ; sel2clipboard $PRIMB 1 )" \
 	 --bind "alt-v:execute-multi(    printf \"%s\n\" {}>$PRIMB  ; sel2clipboard $PRIMB 2 )" \
 	 --bind "alt-f:execute(callvifm {})" \
-	 --bind "enter:execute(callIshell {})" \
+	 --bind "enter:execute(callIshell \'{}\')" \
 	 --bind "alt-a:execute(ec \"/ssh:${RCONN}|sudo:${RHOST}:$RDIR/{}\")" \
 	 --bind "alt-m:execute(callIshell {})"  >"$FSELLINES"  # all selected lines including metainfo on the left
 ECODE=$?
