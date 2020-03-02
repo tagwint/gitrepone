@@ -10,7 +10,17 @@ LOCALVIMHIST=${ONTO4_DRCMDHIST:-/tmp}/${HOSTNAME} # this is for local
 # file history to be saved in the same file name as command history, but diffrent extention
 VIMRUEXT=${ONTO4_HEEXT:-vimru} #ONTO4_HEEXT can be defined locally, then it will be used to name local history files
 
-if [[ ${1:-NooNxe} =~  ^/tmp/bash-fc\..* ]] 
+BFILE=${1:-NooNxe}
+
+#Regexp to ignore 
+IGNOREG='^/tmp/tmp\..*$
+^XScratch.*$'
+
+# if name matches ignore list, do nothing, exit
+grep -qf <(for re in $IGNOREG; do printf "%s\n" $re; done) <<<"$BFILE"  && { echo match ; exit 0; }
+
+
+if [[ ${BFILE} =~  ^/tmp/bash-fc\..* ]] 
 then 
   # save content 
   # CtrlXCtrE was used
