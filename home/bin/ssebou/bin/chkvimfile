@@ -10,7 +10,7 @@ LOCALVIMHIST=${ONTO4_DRCMDHIST:-/tmp}/${HOSTNAME} # this is for local
 # file history to be saved in the same file name as command history, but diffrent extention
 VIMRUEXT=${ONTO4_HEEXT:-vimru} #ONTO4_HEEXT can be defined locally, then it will be used to name local history files
 
-BFILE=${1:-NooNxe}
+BFILE="${@:-NooNxe}"
 
 #Regexp to ignore 
 IGNOREG='^/tmp/tmp\..*$
@@ -20,25 +20,25 @@ IGNOREG='^/tmp/tmp\..*$
 grep -qf <(for re in $IGNOREG; do printf "%s\n" $re; done) <<<"$BFILE"  && { echo match ; exit 0; }
 
 
-if [[ ${BFILE} =~  ^/tmp/bash-fc\..* ]] 
+if [[ "${BFILE}" =~  ^/tmp/bash-fc\..* ]] 
 then 
   # save content 
   # CtrlXCtrE was used
-  cat $1 >> /tmp/ctrlXE
-elif  [[ ${1:-NooNxe} =~  ^/tmp/editserver/.* ]] 
+  cat "$BFILE" >> /tmp/ctrlXE
+elif  [[ "${BFILE}" =~  ^/tmp/editserver/.* ]] 
 then
   # saving content to prevent loose of it when emacsedit fails
   VIMBAK=${HISTKEEP3:-${LOCALVIMHIST}}.editserver.$(date --iso-8601='seconds') # HISTKEEP3 only defined remotely, thus VIMBAK is defined appropriately
-  cat "${1}" > "${VIMBAK}"
+  cat "$BFILE" > "${VIMBAK}"
 else 
-  if [[ ${1:-NooNxe} =~  ^/tmp/tmp\.* ]] 
+  if [[ "${BFILE}" =~  ^/tmp/tmp\.* ]] 
   then
    # so far ignore any other tmp.* patterns
    :
   else
     # saving file name in history
     VIMHIST=${HISTKEEP3:-${LOCALVIMHIST}}.${VIMRUEXT}
-    echo "$(date --iso-8601='seconds') ${1:-Nofile}">>${VIMHIST} # HISTKEEP3 only defined remotely, thus VIMHIST is defined appropriately
+    echo "$(date --iso-8601='seconds') ${BFILE}">>${VIMHIST} # HISTKEEP3 only defined remotely, thus VIMHIST is defined appropriately
   fi
 fi
 

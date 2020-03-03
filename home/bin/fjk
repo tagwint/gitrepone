@@ -433,7 +433,7 @@ callIshell () {
   LTERM=$TRM
   echo Getting to $RCONN ..., Target dir is RD=${RD:-none} 
 
-  FULLCMD="bash --rcfile <( cat ${RAGGSHRC} ; echo cd $RD ; echo $RCMD0; echo $RCMD1 )"
+  FULLCMD="bash --rcfile <( cat ${RAGGSHRC} ; echo cd $RD ; echo \"$RCMD0\"; echo $RCMD1 )"
   [[  "${INTERACTIVE:-0}" == "1" ]] && { ssh -q -tt $RCONN "$FULLCMD" ; return ; }
 
   [ $TMUX ] && LTERM=$TTERM
@@ -819,7 +819,7 @@ GUARDPID=$!
 if [[  ${INTERACTIVE:-0} == "1" ]] ; then 
   # callIshell ${FOPT:-${RDEFAULTWD}}/. $ICMD  ## Why FOPT here?
   # RDIR=${RDEFAULTWD} # No need, RDIR defined earlier 
-  callIshell dummyfile $ICMD
+  callIshell dummyfile "$ICMD"
   exit 
 else
   echo GuardPID=$GUARDPID 
