@@ -323,5 +323,5 @@ endif
 " that path may be specially predefined by the way vim was called (e.g. CtrlXCtrlE creates a file in /tmp 
 " mutt has its own path etc. )
 
-autocmd BufWinLeave * silent execute "!chkvimfile %:p 2>&1" | redraw!
+autocmd BufWinLeave * silent let g:cbname=expand('%:p') | let g:n2save = len(g:cbname) > 0 ? g:cbname : "EMPTYY"  | silent execute "!chkvimfile " . g:n2save . " 2>&1" | redraw!
 

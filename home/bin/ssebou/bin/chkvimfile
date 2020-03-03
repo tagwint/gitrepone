@@ -14,6 +14,7 @@ BFILE="${@:-NooNxe}"
 
 #Regexp to ignore 
 IGNOREG='^/tmp/tmp\..*$
+^EMPTYY$
 ^XScratch.*$'
 
 # if name matches ignore list, do nothing, exit
