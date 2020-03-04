@@ -23,8 +23,13 @@ pushd ${ONTO4_DRCMDHIST} >/dev/null
      --no-sort --tac  "${HSELOPT[@]}" >"$FSELLINES"  
 popd >/dev/null
 KEYPR=$(sed -n '1p' "$FSELLINES" )
-RHOST=$(sed -n '2p' "$FSELLINES" | sed 's/'.${CHISTEXT}.*$'/ /' )
-# echo RHO = $RHOST
+THELINE=$(sed -n '2p' "$FSELLINES")
+RHOST=$(sed 's/'.${CHISTEXT}.*$'/ /' <<<"$THELINE" )
+echo RHO = $RHOST
+FILEARG=$(sed 's|^\(.*\)\.'$CHISTEXT':\([^ ]*\)\s*\(.*\)$|\3|'<<<"$THELINE")
+FARQ=$(printf "%q" "$FILEARG")
+echo FARQ=$FARQ
+
 if [ "$RHOST" == "$HOSTNAME" ]
 then 
 	VIMURL="vim $(sed -n '2p' "$FSELLINES" | sed 's|^\(.*\)\.'$CHISTEXT':\(.* \)\(.*\)$|\3|')"
@@ -37,8 +42,9 @@ else
  	 RCMD=$(sed -n '2p' "$FSELLINES" | sed 's|^\(.*\)\.'$CHISTEXT':\(.*\)$|\2|')
 fi
 
-# echo GOURL = $GOURL
-
+echo GOURL=$GOURL
+#cat  <<<"$GOURL"
+#TODO eval of urls
 case $KEYPR in
     f4) echo $VIMURL
            ;;
