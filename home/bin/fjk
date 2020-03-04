@@ -625,9 +625,14 @@ C2V=${RCONN:?"Connecion is UNDEFINED"}
 # Purpose of below is to get into default dir, probably a home of the user, whatever is set to 
 # there on remote host, then figure it out and as second step, grab user .bash_profile file 
 # to use its content as a first part in the superceeding final rcfile
-ssh -q  "$C2V" 'pwd ; if [ -r .bash_profile ]; then cat .bash_profile; else echo "# .bash_profile " ;fi' 2>&1 > $LCOPYOFBASHPROFILE || { echo Could not connect to ["$C2V"], see details below ; ssh  $C2V ; exit 2; }
+ssh -q  "$C2V" 'pwd ; id -nu; if [ -r .bash_profile ]; then cat .bash_profile; else echo "# .bash_profile " ;fi' 2>&1 > $LCOPYOFBASHPROFILE || { echo Could not connect to ["$C2V"], see details below ; ssh  $C2V ; exit 2; }
 RDEFAULTWD=$( head -n 1  $LCOPYOFBASHPROFILE )
 sed -i '1d' $LCOPYOFBASHPROFILE
+RDEFAULTUSER=$( head -n 1  $LCOPYOFBASHPROFILE )
+sed -i '1d' $LCOPYOFBASHPROFILE
+
+# set user explicitly when implicit default is used
+[[ "$RCONN" =~ ^.*@.*$ ]] || export RCONN=${RDEFAULTUSER}@${RCONN}
 
 BVER=$(ssh -q  "$C2V" 'echo $BASH_VERSION|awk -F. "{print \$1}"')
 [[ "${BVER:-0}" -lt 4 ]] && { >&2 echo "$C2V :Unsupported bash version $BVER" ; exit -1 ; }
