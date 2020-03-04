@@ -301,6 +301,30 @@ tsx () {
   while IFS= read -r line; do printf "%(${TIMESTAMP_FORMAT})T %s\n" '-1'  "${Prepend}${line}"; done
 }
 
+function voc() {                                                                                                                 
+   curl -s https://www.vocabulary.com/dictionary/$1 |                                                                                 
+   grep 'og:description' | sed 's/&#[0-9][0-9][0-9]//g' |                                                                             
+   awk -F "\"" '{print $4}'                                                                                                           
+};
 
- export -f svu tsx
+function czz() {
+  local HESLO tmpf
+  tmpf=$(mktemp "/tmp/XScratch.XXXXXX")
+  function dump() {
+    HESLO="$1"
+    echo  =  =  =  bara: 
+    lynx "https://bara.ujc.cas.cz/psjc/search.php?hledej=Hledej&heslo="$HESLO"&where=hesla&zobraz_ps=ps&numcchange=no&not_initial=1" -dump |
+    sed '1,/karty na stranu/d;/^Refere/,$d' 
+    echo  =  =  =  seznam:
+    
+    lynx -dump "https://slovnik.seznam.cz/preklad/cesky_rusky/$HESLO" |
+    sed '1,/^Hlavn. obsah/d;/^Refere/,$d;/Anglick.*Francouz.*Ital/,$d;/.BUTTON./d' 
+  }
+  dump "$1" > $tmpf
+  less $tmpf
+  rm $tmpf
+}
+
+       
+ export -f svu tsx czz voc
 
