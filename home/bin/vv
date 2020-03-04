@@ -18,27 +18,35 @@ vim -c ':exe "redir => m | silent browse old | redir END | put=m"' -c ":w $TF1" 
 
 #export FZF_DEFAULT_OPTS="--exact --tiebreak=begin --color=dark,hl:220,hl+:226,fg:86,bg+:244,fg+:84                   --bind=*:toggle,alt-j:jump-accept  -m"
 export FZF_DEFAULT_OPTS="--exact --tiebreak=begin --color=dark,hl:220,hl+:226,fg:36,bg+:240,fg+:86                   --bind=*:toggle,alt-j:jump-accept  -m"
-TFN=$(sed '/^[0-9]*:/!d;' $TF1  | fzf --header="<< files recently edited by vim, select and Enter to open again" +s "${HSELOPT[@]}"| awk '{print $2}') 
-FN=$(eval echo $TFN)
-if [[ ! $FN =~ ^(scp|zipfile):/.*$ ]]
+TFN=$(sed '/^[0-9]*:/!d;' $TF1  | fzf --header="<< files recently edited by vim, select and Enter to open again" +s "${HSELOPT[@]}"| sed 's/^[^:]*:\s*//' ) 
+EFN=$(eval echo "$TFN")   # spaces NOT escaped in the filename
+QFN=$(printf "%q" "$EFN") # spaces ARE escaped in the filename
+FN=$QFN
+echo EFN is "[$EFN]"
+echo FN is "[$FN]"
+# printf -v FN '%q' "$EFN"
+if [[ ! "$EFN" =~ ^(scp|zipfile):/.*$ ]]
  then
-  if [[ -f "${FN:-noone}" ]] 
+set -x
+  if [[ -f "$EFN" ]] # not quoting var in comparison as it is already formatted with q format above
   then 
-   vim $FN
+   vim "$EFN"
   else 
-   [[ ! -z "$FN" ]] && { >&2 echo "FILE IS NOT(anymore?) THERE: $FN "; exit 1; }
+ exit
+   [[ ! -z "$EFN" ]] && { >&2 echo "FILE IS NOT(anymore?) THERE: $EFN "; exit 1; }
   fi 
  else 
-	 if [[ $FN =~ ^zipfile:/.*$ ]]
+	 if [[ "$EFN" =~ ^zipfile:/.*$ ]]
 	 then 
 	  ##echo ZIP file may be there yet
 	  TESTC=$(eval echo "$FN" | sed 's|^zipfile:\(.*\)::.*$|stat \1|')
 	  eval $TESTC >/dev/null && { vim $FN; } || { >&2 echo ARCHIVE FILE IS NOT HERE FOR: $FN; exit 1; }
 	 fi
-	 if [[ $FN =~ ^scp://.*$ ]]
+	 if [[ $EFN =~ ^scp://.*$ ]]
 	 then 
 	  ##echo Remote file may take longer to open
-	  TESTC=$(eval echo $FN | sed 's|^scp://|ssh |;s|//| stat /|')
-	  eval $TESTC >/dev/null && { vim $FN; } || { >&2 echo FAILED TO REACH: $FN; exit 1; }
+          ## here is how to insert single quote in sed replace part :echo "hereQpls" | sed 's/Q/'\''/'
+	  TESTC=$(eval echo $EFN | sed 's|^scp://|ssh |;s|//\(.*\)$| " stat '\''/\1'\''"|;')
+	  eval $TESTC >/dev/null && { vim "$EFN"; } || { >&2 echo FAILED TO REACH: "$FN"; exit 1; }
 	 fi
 fi
