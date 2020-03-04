@@ -46,6 +46,9 @@ then
 # For local locations:
 	VIMURL="vim $FARQ"
 	LESSURL="less -R $FARQ"
+	if [[ "$THELINE" =~ ^.*zipfile:.*::.* ]]; then 
+	  LESSURL="vim -R $FARQ"
+        fi
 	if [[ "$LESSURL" =~ ^less.*scp://.* ]] 
         then 
           LESSURL=$VIMURL
