@@ -48,7 +48,11 @@ case $USECASE in
 
   *)
     VIMHIST=${HISTKEEP3:-${LOCALVIMHIST}}.${VIMRUEXT}
-    echo "$(date --iso-8601='seconds') ${BFILE}">>${VIMHIST} # HISTKEEP3 only defined remotely, thus VIMHIST is defined appropriately
+    if [[ -f "$BFILE" ]] ; then 
+       echo "$(date --iso-8601='seconds') ${BFILE}">>${VIMHIST} # HISTKEEP3 only defined remotely, thus VIMHIST is defined appropriately
+    else
+     : # do nothing, there's no saved file actually
+    fi
     ;;
 esac
 
