@@ -366,6 +366,10 @@ PrepIncs () {
   cat <<EORSHELL_RC_INC_EXPAND >>$RSHELL_RC_INC_EXPAND
 # vim: ft=sh
   echo \$\$>>"${SIBLING_SHELL_COUNTER}"
+  export ONTO4_HDIFFCON=root@localhost
+  export ONTO4_HDIFFPORT=2323
+  export ONTO4_HDIFFHOST=${CORPDIFF7}
+  export ONTO4_RHASTEURL="http://hb7.maxbill.com"
   export INCC="\$(date)"
   export MYVIFMRC=$REMOTE_SESSION_RCDIR/${RDOTMEBASE}/vifmrc
   if [ ! -f "$REMOTE_SESSION_RCDIR/${BINBASE}/ush" ] ;then
@@ -818,7 +822,10 @@ RSHRC1=$REMOTE_SESSION_RCDIR/$(basename $RSHELL_RC_INC_EXPAND)
 RSHRC2=$REMOTE_SESSION_RCDIR/$(basename $RSHELL_RC_INC_NOEXPAND) 
 GUARDCMD="bash --rcfile <( cat ~/.bashrc $RSHRC1 $RSHRC2 | tee ${RAGGSHRC}; rm -rf $RSHRC1 $RSHRC2 )"
 GUARDCMD="bash --rcfile <( cat ${RAGGSHRC} )"
-ssh  -q -tt $RCONN "$GUARDCMD" >/dev/null 2>&1 &
+ssh  -q -tt $RCONN -R 2323:diff7:22 -R 3128:lem:8765  "$GUARDCMD"  >/dev/null 2>&1 &
+
+#   export ONTO4_RHASTEPORT=2324
+#   export ONTO4_RHASTEURL=http://localhost:${ONTO4_RHASTEPORT}
 GUARDPID=$!
 
 if [[  ${INTERACTIVE:-0} == "1" ]] ; then 
