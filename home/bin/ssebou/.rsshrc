@@ -86,7 +86,7 @@ transfer() {
 haste() 
 {
  local f=$(mktemp);  cat - >$f 
- local URL=${1:-$HBLOGNET}
+ local URL=${1:-${ONTO4_RHASTEURL:-$HBLOGNET}}
  local u=$(echo ${URL}/$(curl -s  --data-binary "@$f" $URL/documents | awk -v HB=$URL -F '"' '{print $4}'))
  echo $u
  [ -z "$DISPLAY" ] || xdg-open $u
@@ -146,6 +146,36 @@ tcport () {
  H=${1:-localhost}
  P=${2:-22}
  (echo >/dev/tcp/${H}/${P}) &>/dev/null && echo "${H}:${P} is open" || echo "${H}:${P} is closed"
+}
+
+lnbdiff () {
+ local LEFT=${1?"No 1st file given"}
+ local RIGH=${2?"No 2nd file given"}
+ local DIFFURL=${3:-diff7.maxbill.com/uploads/updiff.php}
+ [[ -z "$DIFFURL" ]] &&  DIFFURL=diff7.maxbill.com/uploads/updiff.php
+
+ [ -r  ${LEFT} ] || { echo Not found: $LEFT ;exit  1; }
+ [ -r  ${RIGH} ] || { echo Not found: $RIGH ;exit  1; }
+
+ local LTIT=${3:-"$LEFT"}
+ local RTIT=${4:-"$RIGH"}
+
+ echo 1 [$1] 2[$2] 3[$3] 4[$4]
+
+ local DTEMP=$(mktemp -d --suffix _HDIFF)
+ LTEMP=${DTEMP}/$(echo ${LTIT} |sed -e 's/[^A-Za-z0-9._-]/_/g')
+ RTEMP=${DTEMP}/$(echo ${RTIT} |sed -e 's/[^A-Za-z0-9._-]/_/g')
+ cat ${LEFT}>$LTEMP
+ cat ${RIGH}>$RTEMP
+ EE=$(curl -s -F fileL=@$LTEMP -F fileR=@$RTEMP "$DIFFURL")
+ echo $EE 
+ [ -d "$DTEMP" ] && rm -rf $DTEMP
+}
+
+hdiff () {
+ local LEFT=${1?"No 1st file given"}
+ local RIGH=${2?"No 2nd file given"}
+ lnbdiff $1 $2 $3
 }
 
 
@@ -304,7 +334,7 @@ preexec_functions+=(keep_hist_there)
 [ -f ${THISP}/${RDOTMEBASE}/key-bindings.bash ] && source ${THISP}/${RDOTMEBASE}/key-bindings.bash
 
 # export -f keep_hist_there ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain
-export -f ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain ak_fingerprints 
+export -f lnbdiff hdiff ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain ak_fingerprints 
 
 # export FZF_DEFAULT_OPTS="--exact --tiebreak=begin --color=dark,hl:220,hl+:226,fg:36,bg+:240,fg+:86,pointer:0,marker:1  --bind=*:toggle,alt-j:jump-accept  -m"
 export FZF_DEFAULT_OPTS="--exact --tiebreak=begin --bind=*:toggle,alt-j:jump-accept  -m"

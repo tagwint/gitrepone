@@ -173,6 +173,16 @@ command! -nargs=1 Silent
 vnoremap \\\ :terminal bash -c "echo before ; haste ; echo After"<CR>
 " command Go !set $1 `echo "%" | sed 's/\.c//g'` ;gcc -o $1 "%" ; chmod o+x $1; $1
 
+function! PubBuffer()
+   let l:pubas = input("Publish as: ",expand('%:t'))
+   let l:tmpfile = "/tmp/" . l:pubas
+   execute "silent normal :write! " . l:tmpfile . "\<CR>"  
+   let l:cmd2exec = "!vimpubuf " . l:tmpfile . " \<cr> "
+   execute l:cmd2exec
+   " echo "deleting " . l:tmpfile
+   call delete(l:tmpfile)
+endfunction
+
 function! SetDBConn()
    let g:dbconn = input("usr/pwd@host/sid: ")
    let b:dbconn = g:dbconn
@@ -249,6 +259,8 @@ endfunction
 " vnoremap aaa :terminal bash -c "echo before ; haste ; echo After"<CR>
 " command -range AAA call Aaa()
 command -range OMNI <line1>,<line2>call OmniRun()
+command PUBBUFF call PubBuffer()
+
 command SetDBConn call SetDBConn()
 vnoremap <Enter><Enter> :OMNI<CR>
 nnoremap <Space><Space> <C-W><C-W>
