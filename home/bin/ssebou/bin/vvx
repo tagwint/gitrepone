@@ -117,7 +117,7 @@ precalc () {
  fi
 }
 
-export -f precalc
+export -f precalc samehost
 # getting old files fro viminfo into TF1
 vim -c ':exe "redir => m | silent browse old | redir END | put=m"' -c ":w $TF1" -c ":q"
 
