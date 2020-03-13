@@ -34,6 +34,12 @@ pushd ${DIROFEDITHIST} >/dev/null
 export VIMHISTEXT=${ONTO4_HEEXT:-vimru}
 export VIMHISTMASK="*.${VIMHISTEXT}"
 
+samehost () {
+  [[ "$1" == "$HOSTNAME" ]] && return 0
+  [[ "$1" == "vifmhist" ]]  && return 0 # TODO: paramterize this literal
+  return 1
+}
+
 precalc () {
  
  THELINE="$@"
@@ -43,7 +49,7 @@ precalc () {
  FILEARG=$(cut -d' ' --complement -f1,2 <<<"$THELINE")
  FARQ=$(printf "%q" "$FILEARG")
  echo FARQ=$FARQ
- if [ $RHOST == $HOSTNAME ]
+ if samehost $RHOST
  then # For local locations (HERE):
       FARQ=$(eval echo "$FARQ")
       echo EVALECHOFARQ=$FARQ
@@ -94,7 +100,7 @@ precalc () {
  echo enter : GOURL......=$GOURL
  echo "========================= CONTENT PREVIEW : "
  if [[ ! "$FARQ" =~ ^zipfile:/.* ]]; then
-     if [[ $RHOST == $HOSTNAME ]]; then
+     if samehost $RHOST ; then
         if [[ "$FARQ" =~ ^scp://.* ]] 
         then 
           SCPHOST=$(echo $FARQ|sed 's,^.*scp://,,;s,//.*$,,')
