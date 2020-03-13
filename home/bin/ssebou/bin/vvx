@@ -1,0 +1,168 @@
+#!/bin/bash
+FSELLINES=/tmp/fzfRHISF_$$
+TF1=$(mktemp -u)
+touch $FSELLINES
+
+finish () {
+ local T
+ T=${FSELLINES:-NoHarm_caused}
+ rm $T 2>/dev/null
+ rm $TF1 2>/dev/null
+}
+
+
+trap finish  exit
+# set -x
+[[ -z "$1" ]] || HSELOPT=( -q "$*")
+
+# assumption: edit history file is next to cmd history file, just own extention, default ext is vimru
+if [[ "${HISTKEEP3:-undefined}" == "undefined" ]]; then 
+ ## being locally
+ DIROFEDITHIST=${ONTO4_DRCMDHIST}
+else 
+ ## being remote
+ DIROFH3=$(dirname ${HISTKEEP3})
+ DIROFEDITHIST=${DIROFH3}
+fi
+
+
+DIROFHIST=${ONTO4_DRCMDHIST:-${HISTKEEP3=/root/.config/vifm/vifmhist :-UndefINED}} 
+
+[ -x  ${DIROFEDITHIST:-UndefINED} ] || { echo 'DIROFEDITHIST is either undefined or inaccessible ';  exit ; }
+pushd ${DIROFEDITHIST} >/dev/null
+
+export VIMHISTEXT=${ONTO4_HEEXT:-vimru}
+export VIMHISTMASK="*.${VIMHISTEXT}"
+
+precalc () {
+ 
+ THELINE="$@"
+ # echo THELINE is  $THELINE
+ RHOST=$(awk  '{ print $2 }'<<<"$THELINE"| sed "s/.$VIMHISTEXT$//;s/^=//" )
+ echo RHOST = $RHOST
+ FILEARG=$(cut -d' ' --complement -f1,2 <<<"$THELINE")
+ FARQ=$(printf "%q" "$FILEARG")
+ echo FARQ=$FARQ
+ if [ $RHOST == $HOSTNAME ]
+ then # For local locations (HERE):
+      FARQ=$(eval echo "$FARQ")
+      echo EVALECHOFARQ=$FARQ
+      # VIMURL="vim \"$FARQ\""
+      VIMURL="vim $FARQ"
+      RO_VIMURL="vim -R $FARQ"
+      LESSURL="less -R $FARQ"
+      GOURL=$VIMURL
+      # LESSURL="less -R \"$FARQ\""
+      if [[ "$THELINE" =~ ^.*zipfile:.*::.* ]]; then 
+        LESSURL="vim -R $FARQ"
+        GOURL=$VIMURL
+      fi
+      if [[ "$LESSURL" =~ ^less.*scp://.* ]] 
+      then 
+        LESSURL=$VIMURL
+        SCPHOST=$(echo $LESSURL|sed 's,^.*scp://,,;s,//.*$,,')
+        timeout 3 ssh -q $SCPHOST 'hostname -I' || { >&2 echo "Could not connect to [$SCPHOST]" ; exit 2; } 
+      fi
+      # for locals scp is not really scp :(
+      SCP_EDITCMD="$VIMURL"
+      SCP_VIEWCMD="$RO_VIMURL"
+ else # For remote locations (THERE):
+      timeout 3 ssh -q $RHOST 'hostname -I' || { >&2 echo "Could not connect to [$RHOST]" ; exit 2; } 
+      # logon and handle there, on remote
+      VIMURL="fjk $RHOST  ic 'export http_proxy=localhost:3128; vim $FARQ'"
+      LESSURL="fjk $RHOST ic 'export http_proxy=localhost:3128; less -R $FARQ'"
+      GOURL="fjk $RHOST ic 'kk \$(dirname $FARQ)'"
+      
+      SCP_EDITCMD="vim $(eval echo scp://${RHOST}//${FARQ})"
+      SCP_VIEWCMD="vim -R $(eval echo scp://${RHOST}//${FARQ})"
+ 
+      if [[ "$THELINE" =~ ^.*zipfile:.*::.* ]]; then 
+        # handling zipfile: entries specially - by going to remote shell and open with vim there
+        ZFONLY=${FARQ/zipfile:/} # extracting just the archive file name
+        GOURL="fjk $RHOST ic 'kk \$(dirname ${ZFONLY%%::*})'"
+        LESSURL="fjk $RHOST ic 'export http_proxy=localhost:3128; vim -R $FARQ'"
+      elif [[ "$THELINE" =~ ^.*war$|^.*jar$|^.*zip$ ]]; then 
+        LESSURL="fjk $RHOST ic 'export http_proxy=localhost:3128; vim -R $FARQ'"
+      else 
+        :
+      fi
+ fi
+ echo f3... : LESSURL....=$LESSURL 
+ echo f4... : VIMURL.....=$VIMURL
+ echo alt-i : SCP_EDITCMD=$SCP_EDITCMD
+ echo alt-o : SCP_VIEWCMD=$SCP_VIEWCMD
+ echo enter : GOURL......=$GOURL
+ echo "========================= CONTENT PREVIEW : "
+ if [[ ! "$FARQ" =~ ^zipfile:/.* ]]; then
+     if [[ $RHOST == $HOSTNAME ]]; then
+        if [[ "$FARQ" =~ ^scp://.* ]] 
+        then 
+          SCPHOST=$(echo $FARQ|sed 's,^.*scp://,,;s,//.*$,,')
+          SCPFILE=$(echo $FARQ|sed 's,^.*scp://,,;s,^.*//,/,')
+          timeout 3 ssh -q $SCPHOST "cat $(eval echo \"$SCPFILE\") | head -n 11" || { >&2 echo "Could not connect to [$SCPHOST]" ; exit 2; } 
+        else
+          cat "$(eval echo $FARQ)" | head -n 11
+        fi
+     else
+        timeout 3 ssh -q $RHOST "cat $(eval echo \"$FARQ\") | head -n 11"
+     fi
+ else
+   echo Preview is too much effort, plese do open to see the content
+ fi
+}
+
+export -f precalc
+# getting old files fro viminfo into TF1
+vim -c ':exe "redir => m | silent browse old | redir END | put=m"' -c ":w $TF1" -c ":q"
+
+BCTS=$(date -d "-1 days" --iso-8601='sec')
+# make them look the same as those saved by chkvimvile, that is timestamp prepended
+# but timestamp some old to make it get into beginning of the list
+# sed '/^[0-9]*:/!d;s/[^:]*://' $TF1  | ts "${HOSTNAME}:${BCTS}"
+
+# TODO PREVENIVE CHECK FOR FILE EXISTANCE AND MARK THE ENTRIES THAT DO
+
+#keeping timestamps
+
+# whole scope of the edit history consists of:
+# 1. vim browse old output
+# 2. content of all .vimru files
+# when on collector there are many of history files collected
+# when on remote, there's probably only one default
+
+GREPALLEDITED="grep -H . $VIMHISTMASK"
+
+( eval $GREPALLEDITED ; ( sed '/^[0-9]*:/!d;s/[^:]*: //' $TF1  | ts "${HOSTNAME}.${VIMHISTEXT}:${BCTS}" )) |
+# swap columns like: ts hostname file  to uniquize by host+file
+sed 's|^\([^:]*\)\(:\)\(.[^ ]*\)\(.*\)|\3:=\1\4|' |
+sed 's|^\(...................\)[^=]*\(.*\)$|\1 \2|' | sort -r |
+awk -F= '!seen[$2]++'  | 
+fzf --header="see preview for insturctions. alt-t to toggle preview window " --expect="alt-o,alt-i,f3,f4,f9,enter" \
+    --preview "precalc {}" \
+    --preview-window down:35% \
+    --bind "alt-t:toggle-preview" \
+    --no-sort  "${HSELOPT[@]}" >"$FSELLINES"  
+
+ECODE=$?
+[[ $ECODE -gt 0 ]] &&  { echo Selection of remote file cancelled exit with code ["$ECODE"]; exit $ECODE ; }
+
+popd >/dev/null
+
+KEYPR=$(sed -n '1p' "$FSELLINES" )
+THELINE=$(sed -n '2p' "$FSELLINES")
+
+precalc "$THELINE"
+
+
+case $KEYPR in
+    alt-o) eval ${SCP_VIEWCMD?"No scp view aka r/o edit possible for $RHOST and $FARQ"}
+           ;;
+    alt-i) eval ${SCP_EDITCMD?"No scp edit possible for $RHOST and $FARQ"}
+           ;;
+    f4) eval $VIMURL
+           ;;
+    f3) eval $LESSURL
+           ;;
+    f9|enter) eval $GOURL
+           ;;
+esac

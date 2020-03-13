@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 # Call recently edited by vim allowing to select with fzf
 # set -x
+
+vvx $HOSTNAME $@ 
+
+exit 0
+# below is just vim old files enumeration
+# the extended vvx also enumerate collected histories
+# bypassing below atm, later probably purge it
+
 [[ -z "$1" ]] || HSELOPT=(-1 -q "$*")
 
 TF1=$(mktemp -u)
