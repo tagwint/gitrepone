@@ -2,7 +2,7 @@
 # Call recently edited by vim allowing to select with fzf
 # set -x
 
-vvx $HOSTNAME $@ 
+vvx "$HOSTNAME | vifmhist " $@ 
 
 exit 0
 # below is just vim old files enumeration
