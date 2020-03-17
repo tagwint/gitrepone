@@ -127,7 +127,7 @@ ddif () {
   echo #---
   
   diff -rq $LDIR $RDIR -X $EXLD              |   # comment
-   sed "s@$LDIR@\$LDIR/@g;s@$RDIR@\$RDIR/@g" |
+   sed "s@$LDIR@\$LDIR@g;s@$RDIR@\$RDIR@g" |
    sed 's/Only in \$RDIR/ROnly in x \$RDIR/g;s/Only in \$LDIR/LOnly \$LDIR/g'|
    sed 's@: *@/@g'|
    sed 's/[[:space:]]and[[:space:]]/ /g' |
