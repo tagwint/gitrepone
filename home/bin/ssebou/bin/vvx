@@ -40,6 +40,44 @@ samehost () {
   return 1
 }
 
+file_preview () {
+  local FFN RCONN PCMD
+  RCONN="${1?'No connection string passed for remote preview'}"
+  FFN="${2?'No pathe to file on remote server passed for remote preview'}"
+  echo FFN is : $FFN
+  # ssh -q $RCONN  "export MIME=\$(file -ib $FFN) ; case \$MIME  in
+  PCMD="[ -f  \"$FFN\" ] || { echo FileIsNotThereAnymore; exit ; } ; export MIME=\$(file -ib \"$FFN\") ; case \$MIME  in
+	text*|application/xml*)
+          NOL=\$(cat \"$FFN\"|wc -l); echo Lines: \$NOL 
+	if [[ "${FFN// /_}" =~ ^.*\.log$|^.*/.*log\..*$|^.*/log/.*$|^.*/logs/.*$ ]] ;then
+	    ( ( tail -n 4 \"$FFN\" | tac ) ; echo --------------- \<\< TAIL reversed, ERRORs in reverse order below:; ( cat -n \"$FFN\" | egrep 'ERROR' | tac ) ;echo  .. skipped in preview  ........; echo ----------- HEAD \>\> ;  head -n 4 \"$FFN\" ) 
+          else
+            if [[ \$NOL -lt 800 ]] ; then 
+              cat \"$FFN\"
+            else
+	      ( ( head -n 20 \"$FFN\" | tac ) ; echo --------------- \<\< HEAD  .. skipped in preview  ........ Tail \>\> ;  tail -n 14 \"$FFN\" ) 
+            fi 
+          fi 
+	;;
+	application/zip*)
+           unzip -l \"${FFN}\" | head -n 8  ;echo ...
+	;;
+        inode/x-empty*)
+           echo EMPTY FILE
+	;;
+	*) 
+          echo mime is \$MIME , do not really know how to preview, using hexdump
+	  ( hexdump -C \"${FFN}\"| head -n 5 ; echo \<\< Head ) 
+	;;
+	esac
+  "
+  if [[ "${RCONN}" == "local" ]] ;then
+    bash -c "$PCMD"
+  else 
+    timeout 3 ssh -q $RCONN "${PCMD}" || echo "Timed out to connect $RCONN"
+  fi
+}
+
 precalc () {
  
  THELINE="$@"
@@ -95,8 +133,8 @@ precalc () {
  fi
  echo f3... : LESSURL....=$LESSURL 
  echo f4... : VIMURL.....=$VIMURL
- echo alt-i : SCP_EDITCMD=$SCP_EDITCMD
  echo alt-o : SCP_VIEWCMD=$SCP_VIEWCMD
+ echo alt-i : SCP_EDITCMD=$SCP_EDITCMD
  echo enter : GOURL......=$GOURL
  echo "========================= CONTENT PREVIEW : "
  if [[ ! "$FARQ" =~ ^zipfile:/.* ]]; then
@@ -105,19 +143,19 @@ precalc () {
         then 
           SCPHOST=$(echo $FARQ|sed 's,^.*scp://,,;s,//.*$,,')
           SCPFILE=$(echo $FARQ|sed 's,^.*scp://,,;s,^.*//,/,')
-          timeout 3 ssh -q $SCPHOST "cat $(eval echo \"$SCPFILE\") | head -n 11" || { >&2 echo "Could not connect to [$SCPHOST]" ; exit 2; } 
+          file_preview "$SCPHOST" "$SCPFILE"  
         else
-          cat "$(eval echo $FARQ)" | head -n 11
+          file_preview "local" "$FARQ"  
         fi
      else
-        timeout 3 ssh -q $RHOST "cat $(eval echo \"$FARQ\") | head -n 11"
+        file_preview "$RHOST" "$(eval echo "$FARQ")"  
      fi
  else
    echo Preview is too much effort, plese do open to see the content
  fi
 }
 
-export -f precalc samehost
+export -f precalc samehost file_preview
 # getting old files fro viminfo into TF1
 vim -c ':exe "redir => m | silent browse old | redir END | put=m"' -c ":w $TF1" -c ":q"
 
@@ -145,7 +183,7 @@ sed 's|^\(...................\)[^=]*\(.*\)$|\1 \2|' | sort -r |
 awk -F= '!seen[$2]++'  | 
 fzf --header="see preview for insturctions. alt-t to toggle preview window " --expect="alt-o,alt-i,f3,f4,f9,enter" \
     --preview "precalc {}" \
-    --preview-window down:35% \
+    --preview-window down:40% \
     --bind "alt-t:toggle-preview" \
     --no-sort  "${HSELOPT[@]}" >"$FSELLINES"  
 
