@@ -137,7 +137,7 @@ command! ncdiff  ncdiff  %c %C
 command! meld  meld  %c %C >/dev/null 2>&1 &
 command! spplogdiff spplogdiff  %c %C 
 " .rdotme 
-command! ddif  ddif  %d/%c %C 
+command! ddif  ddif  %d/%c %C | vim -
 command! zip zip -r %f.zip %f
 command! run !! ./%f
 command! make !!make %a
