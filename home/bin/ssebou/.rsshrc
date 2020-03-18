@@ -57,11 +57,9 @@ pub () {
 }
 
 mbs () {
-  set -x
   local CMD=${1:-status}
   systemctl 2>/dev/null 1>&2 || { echo no systemd  here; return 2 ; }
-  systemctl | grep -E '(tomcat|wfswarm).*service' | cut -c 3- | awk '{print $1}' | xargs -I {} sudo systemctl ${CMD} {}
-  set +x
+  systemctl | grep --color=auto -E '(tomcat|wfswarm|thorntail).*service' |  awk '{print $2}' | xargs -I {} sudo systemctl ${CMD} {}
 }
 
 ppub () {
@@ -228,6 +226,10 @@ scontRain () {
  cat - | sed -e "s/^\(.*\)\(running\)\(.*\)$/\1${green}\2${nrm}\3/ig;s/^\(.*\)\(dead\)\(.*\)$/\1${red}\2${nrm}\3/ig;s/^\(.*\)\(failed\)\(.*\)$/\1${magenta}\2${nrm}\3/ig"
 }
 
+scolt () {
+  scont "$@" |scontRain
+}
+
 #there , on remote
 keep_hist_there() { 
   local LASTC
@@ -334,7 +336,7 @@ preexec_functions+=(keep_hist_there)
 [ -f ${THISP}/${RDOTMEBASE}/key-bindings.bash ] && source ${THISP}/${RDOTMEBASE}/key-bindings.bash
 
 # export -f keep_hist_there ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain
-export -f lnbdiff hdiff ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain ak_fingerprints 
+export -f lnbdiff hdiff ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain scolt ak_fingerprints 
 
 # export FZF_DEFAULT_OPTS="--exact --tiebreak=begin --color=dark,hl:220,hl+:226,fg:36,bg+:240,fg+:86,pointer:0,marker:1  --bind=*:toggle,alt-j:jump-accept  -m"
 export FZF_DEFAULT_OPTS="--exact --tiebreak=begin --bind=*:toggle,alt-j:jump-accept  -m"
