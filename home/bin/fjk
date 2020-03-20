@@ -404,8 +404,10 @@ EORSHELL_RC_INC_EXPAND
 cat <<\EORSHELL_RC_INC2 >$RSHELL_RC_INC_NOEXPAND
 export HNAME=$(hostname -s)
 export IPLASTTETRADE=$(hostname -I|awk -F. "{ print \$NF }")
+KKNEST=
+for i in `seq ${M_LVL:-0}`; do KKNEST="${KKNEST}◢" ; done
 ## PS1 flaw: always shows $ at the prompt end, even for root, because of \$ is interpredted hard way
-export PS1="\[\033[38;5;166m\]\u\[$(tput sgr0)\]\[\033[38;5;15m\]@\[$(tput sgr0)\]\[\033[38;5;11m\]${HNAME,,}\[$(tput sgr0)\]\[\033[38;5;15m\]:${IPLASTTETRADE}\[$(tput sgr0)\]\[\033[38;5;6m\][\[$(tput sgr0)\]\[\033[38;5;186m\]\w\[$(tput sgr0)\]\[\033[38;5;6m\]]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"
+export PS1="${KKNEST}\[\033[38;5;166m\]\u\[$(tput sgr0)\]\[\033[38;5;15m\]@\[$(tput sgr0)\]\[\033[38;5;11m\]${HNAME,,}\[$(tput sgr0)\]\[\033[38;5;15m\]:${IPLASTTETRADE}\[$(tput sgr0)\]\[\033[38;5;6m\][\[$(tput sgr0)\]\[\033[38;5;186m\]\w\[$(tput sgr0)\]\[\033[38;5;6m\]]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"
 EORSHELL_RC_INC2
 #Now compoisng final rc file for remote shell
 cat > $LAGGSHRC \
