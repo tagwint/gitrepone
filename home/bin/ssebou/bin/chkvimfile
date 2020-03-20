@@ -17,6 +17,7 @@ VIMTMPDIR=$(sed 's|/*$||' <<<"${TMPDIR:-/tmp}")
 
 #Regexp to ignore 
 IGNOREG='^'${VIMTMPDIR}'/tmp\..*$
+/tmp/crontab\..*$
 ^EMPTYY$
 ^XScratch.*$'
 

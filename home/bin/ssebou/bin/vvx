@@ -96,14 +96,15 @@ precalc () {
       RO_VIMURL="vim -R $FARQ"
       LESSURL="less -R $FARQ"
       GOURL=$VIMURL
+      JUMPURL="cd $(dirname $(eval echo "$FARQ"|sed 's/^zipfile://;s/^tarfile://'))"
       # LESSURL="less -R \"$FARQ\""
       if [[ "$THELINE" =~ ^.*zipfile:.*::.* ]]; then 
-        LESSURL="vim -R $FARQ"
+        LESSURL="$RO_VIMURL"
         GOURL=$VIMURL
       fi
       if [[ "$LESSURL" =~ ^less.*scp://.* ]] 
       then 
-        LESSURL=$VIMURL
+        LESSURL=$RO_VIMURL
         SCPHOST=$(echo $LESSURL|sed 's,^.*scp://,,;s,//.*$,,')
         timeout 3 ssh -q $SCPHOST 'hostname -I' || { >&2 echo "Could not connect to [$SCPHOST]" ; exit 2; } 
       fi
@@ -137,6 +138,7 @@ precalc () {
  echo alt-i : SCP_EDITCMD=$SCP_EDITCMD
  echo enter : GOURL......=$GOURL
  echo "========================= CONTENT PREVIEW : "
+ echo alt-space:JUMPURL is ${JUMPURL:-Undefined}
  if [[ ! "$FARQ" =~ ^zipfile:/.* ]]; then
      if samehost $RHOST ; then
         if [[ "$FARQ" =~ ^scp://.* ]] 
@@ -181,7 +183,7 @@ GREPALLEDITED="grep -H . $VIMHISTMASK"
 sed 's|^\([^:]*\)\(:\)\(.[^ ]*\)\(.*\)|\3:=\1\4|' |
 sed 's|^\(...................\)[^=]*\(.*\)$|\1 \2|' | sort -r |
 awk -F= '!seen[$2]++'  | 
-fzf --header="see preview for insturctions. alt-t to toggle preview window " --expect="alt-o,alt-i,f3,f4,f9,enter" \
+fzf --header="see preview for insturctions. alt-t to toggle preview window " --expect="alt-space,alt-o,alt-i,f3,f4,f9,enter" \
     --preview "precalc {}" \
     --preview-window down:40% \
     --bind "alt-t:toggle-preview" \
@@ -208,5 +210,7 @@ case $KEYPR in
     f3) eval $LESSURL
            ;;
     f9|enter) eval $GOURL
+           ;;
+    alt-space) exec eval $JUMPURL
            ;;
 esac
