@@ -49,7 +49,7 @@ upd () {
     }
    #cmus
    CmusMTIT='NoCmus'
-   cmus-remote -Q >/dev/null && {
+   timeout 3 cmus-remote -Q >/dev/null && {
      CmusMNAME=$(egrep ' tag title' $HOME/.config/cmus/laststatus  | tail -1|sed 's/^.* tag title \(.*\)/\1/g' | tr -d \') 
      CmusSTREAMTIT=$(tail -1 $HOME/.config/cmus/laststatus  | grep ' stream'| sed 's/^.* stream\([^;]*\).*$/\1/g'|  tr \' \#|  tr \" \#  )
      [ ${#CmusSTREAMTIT} -gt 42 ] && CmusSTREAMTIT="${CmusSTREAMTIT:0:42}..."

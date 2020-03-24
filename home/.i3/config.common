@@ -139,6 +139,7 @@ for_window [class=".*creenkey"] floating enable
 for_window [title="TerminalRadio$"] floating enable
 for_window [class="Skype-bin" title="Information$"] floating enable
 for_window [class="Skype-bin" title="Are you sure you want.*$"] floating enable
+for_window [title="^FLLOAT.*$"] floating enable
 for_window [title="^Remmina.*$"] floating enable
 for_window [title="^//LYRICS.*$"] floating enable
 # Zoom
