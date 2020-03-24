@@ -1,0 +1,6 @@
+#!/bin/bash 
+# a tmux session with running clipboard manager daemon to be created at startup
+tmux new-session -d -s GREENC
+tmux send-keys -t GREENC  greenclip Space daemon C-m
+
+
