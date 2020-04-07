@@ -176,7 +176,7 @@ BCTS=$(date -d "-1 days" --iso-8601='sec')
 # when on collector there are many of history files collected
 # when on remote, there's probably only one default
 
-GREPALLEDITED="grep -H . $VIMHISTMASK"
+GREPALLEDITED="grep -a -H . $VIMHISTMASK"
 
 ( eval $GREPALLEDITED ; ( sed '/^[0-9]*:/!d;s/[^:]*: //' $TF1  | ts "${HOSTNAME}.${VIMHISTEXT}:${BCTS}" )) |
 # swap columns like: ts hostname file  to uniquize by host+file
