@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo ================= FROM KEYSTORAGE
+JAVA_HOME=/opt/mbapps/java/jdk1.8.0_162
+JAVA_HOME=/opt/mbapps/java/jdk1.7.0_80
+JAVA_HOME=/home/shared/jdk1.8.0_162
+JAVA_HOME=/home/shared/jdk1.7.0_80
+ALIAS=$(hostname).maxbill.com
+KSTMPF=/tmp/ks.cert
+cd $JAVA_HOME && ./bin/keytool -exportcert -keystore ./jre/lib/security/cacerts -alias $ALIAS -file $KSTMPF -storepass changeit 
+openssl x509 -inform der -in $KSTMPF 
+echo ================= FROM SERVER
+openssl s_client -connect ${ALIAS}:443 </dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' 
