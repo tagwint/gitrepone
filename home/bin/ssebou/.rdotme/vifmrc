@@ -133,7 +133,7 @@ mark h ~/
 
 command! df df -h %m 2> /dev/null
 command! diff vim -d %f %F
-command! hdiff  hdiff  %c %C
+command! hdiff  hdiff  %c %C | less
 command! ncdiff  ncdiff  %c %C
 command! meld  meld  %c %C >/dev/null 2>&1 &
 command! spplogdiff spplogdiff  %c %C 
