@@ -485,6 +485,20 @@ nnoremap <f6> :move<cr>
 nnoremap <f7> :mkdir<space>
 nnoremap <f8> :delete<cr>
 
+
+" 2 mappings below are usefull in compare view to find ....... lines
+" to locate missing entries
+nnoremap ]e  
+     \ :
+     \ | execute 'normal /^$'
+     \ | execute 'normal n'<cr>
+
+     " \ : let $SOMETHING = "plapla"
+nnoremap [e  
+     \ :
+     \ | execute 'normal ?^$'
+     \ | execute 'normal n'<cr>
+
 command vv vv
 nnoremap ,, :!vv <cr>
 
