@@ -212,22 +212,24 @@ fdswap () {
   done
 }
 
+# 🟥 🟦 🟧 🟨 🟩 🟪 🟫
+
 scontRain () {
- local nrm inv dim hili patt green
- hili="[0m[31m";\
- green="[32m";\
- red="[31m";\
- magenta="[35m";\
- inv="[7m";\
- dim="[2m";\
- nrm="[0m"
+ local nrm inv dim hili patt green red magenta
+ hili=$(echo -e "\e[0m\e[31m")
+ green=$(echo -e "\e[32m")
+ red=$(echo -e "\e[31m")
+ magenta=$(echo -e "\e[35m")
+ inv=$(echo -e "\e[7m")
+ dim=$(echo -e "\e[2m")
+ nrm=$(echo -e "\e[0m")
  patt=${1}
  # cat - | sed -e "s/^\(running\)$/${green}\1${nrm}/ig;s/^\(failed\)$/${red}\1${nrm}/ig;"
  cat - | sed -e "s/^\(.*\)\(running\)\(.*\)$/\1${green}\2${nrm}\3/ig;s/^\(.*\)\(dead\)\(.*\)$/\1${red}\2${nrm}\3/ig;s/^\(.*\)\(failed\)\(.*\)$/\1${magenta}\2${nrm}\3/ig"
 }
 
 scolt () {
-  scont "$@" |scontRain
+  scont "$@" |grep -v Loaded|scontRain
 }
 
 #there , on remote
