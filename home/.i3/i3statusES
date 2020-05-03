@@ -42,7 +42,7 @@ upd () {
 
     MUSTIT=$PRE"${MTIT}"$COL'#ffcc99'$CER
     BTRY=$(upower -i $(upower -e | grep 'BAT') | grep percent | awk '{ print $NF }')
-    BTRYTIT=$PRE"${BTRY:-}"$COL'#22cc22'$CER
+    BTRYTIT=$PRE"🔋${BTRY:-}"$COL'#22cc22'$CER
     BTRYVAL=$(echo $BTRY |cut -d '%' -f1)
     upower --dump | grep -q 'state:.*dischar' && {
     [ ${BTRYVAL:-100} -le 8 ] && _ala 440
