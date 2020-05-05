@@ -357,6 +357,7 @@ act_menu () {
 
 
 PrepIncs () {
+  local nrm inv dim
   RF=${RDIR%/}/
   echo Getting to $RCONN , RDIR is ${RDIR:-notset}, target dir is  $RF ... 
   RCMD0="$RSHEV ; [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; [ -x ${RF:-n.on_e} ] && cd ${RF}; "
@@ -407,19 +408,23 @@ export IPLASTTETRADE=$(hostname -I|awk -F. "{ print \$NF }")
 KKNEST=
 
 if [ "$USER" = "root" ]; then
-    r="\033[01;38;5;124mr"
-    o="\033[01;38;5;196mo"
-    o2="\033[01;38;5;202mo"
-    t="\033[01;38;5;208mt"
+    r="\[\033[01;38;5;124m\]r"
+    o="\[\033[01;38;5;196m\]o"
+   o2="\[\033[01;38;5;202m\]o"
+    t="\[\033[01;38;5;208m\]t"
     __user="\e[7m$r$o$o2$t"
 else
-    __user="\e[01;38;2;1;200;2m\]\u"
+     __user="\[\e[01;38;2;1;200;1m\]\u"
 fi   
-
-for i in `seq ${M_LVL:-0}`; do KKNEST="${KKNEST}◢" ; done
+inv=$(echo -e "\e[7m")
+dim=$(echo -e "\e[2m")
+nrm=$(echo -e "\e[0m")
+#\e[5m  -blink
+#
+unset KKNEST
+for i in `seq ${M_LVL:-0}`; do KKNEST="${KKNEST}=" ; done
 ## PS1 flaw: always shows $ at the prompt end, even for root, because of \$ is interpredted hard way
-export PS1="${KKNEST}\[\033[38;5;166m\]\u\[$(tput sgr0)\]\[\033[38;5;15m\]@\[$(tput sgr0)\]\[\033[38;5;11m\]${HNAME,,}\[$(tput sgr0)\]\[\033[38;5;15m\]:${IPLASTTETRADE}\[$(tput sgr0)\]\[\033[38;5;6m\][\[$(tput sgr0)\]\[\033[38;5;186m\]\w\[$(tput sgr0)\]\[\033[38;5;6m\]]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"
-export PS1="${KKNEST}${__user}\[$(tput sgr0)\]\[\033[38;5;15m\]@\[$(tput sgr0)\]\[\033[38;5;11m\]${HNAME,,}\[$(tput sgr0)\]\[\033[38;5;15m\]:${IPLASTTETRADE}\[$(tput sgr0)\]\[\033[38;5;6m\][\[$(tput sgr0)\]\[\033[38;5;186m\]\w\[$(tput sgr0)\]\[\033[38;5;6m\]]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"
+export PS1="\[$inv\]\[\033[01;38;5;208m\]${KKNEST}\[$nrm\]${__user}\[$(tput sgr0)\]\[\033[38;5;15m\]@\[$(tput sgr0)\]\[\033[38;5;11m\]${HNAME,,}\[$(tput sgr0)\]\[\033[38;5;15m\]:${IPLASTTETRADE}\[$(tput sgr0)\]\[\033[38;5;6m\]\[$(tput sgr0)\]\[\033[38;5;186m\][\w\[$(tput sgr0)\]\[\033[38;5;6m\]]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"
 EORSHELL_RC_INC2
 #Now compoisng final rc file for remote shell
 cat > $LAGGSHRC \
