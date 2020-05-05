@@ -337,3 +337,8 @@ endif
 
 autocmd BufWinLeave * silent let g:cbname=expand('%:p') | let g:n2save = len(g:cbname) > 0 ? g:cbname : "EMPTYY"  | silent execute "!chkvimfile " . g:n2save . " 2>&1" | redraw!
 
+" more goodies by VX" select last paste in visual mode
+" borrowed from https://dalibornasevic.com/posts/43-12-vim-tips
+"
+" select last paste in visual mode
+nnoremap <expr> gb '`[' . strpart(getregtype(), 0, 1) . '`]'
