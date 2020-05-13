@@ -416,15 +416,16 @@ if [ "$USER" = "root" ]; then
 else
      __user="\[\e[01;38;2;1;200;1m\]\u"
 fi   
+nest="\[\e[01;38;2;210;10;63m\]"
 inv=$(echo -e "\e[7m")
 dim=$(echo -e "\e[2m")
 nrm=$(echo -e "\e[0m")
 #\e[5m  -blink
 #
 unset KKNEST
-for i in `seq ${M_LVL:-0}`; do KKNEST="${KKNEST}=" ; done
+for i in `seq ${M_LVL:-0}`; do KKNEST="${KKNEST}·" ; done
 ## PS1 flaw: always shows $ at the prompt end, even for root, because of \$ is interpredted hard way
-export PS1="\[$inv\]\[\033[01;38;5;208m\]${KKNEST}\[$nrm\]${__user}\[$(tput sgr0)\]\[\033[38;5;15m\]@\[$(tput sgr0)\]\[\033[38;5;11m\]${HNAME,,}\[$(tput sgr0)\]\[\033[38;5;15m\]:${IPLASTTETRADE}\[$(tput sgr0)\]\[\033[38;5;6m\]\[$(tput sgr0)\]\[\033[38;5;186m\][\w\[$(tput sgr0)\]\[\033[38;5;6m\]]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"
+export PS1="\[${nest}${inv}\]${KKNEST}\[$nrm\]${__user}\[$(tput sgr0)\]\[\033[38;5;15m\]@\[$(tput sgr0)\]\[\033[38;5;11m\]${HNAME,,}\[$(tput sgr0)\]\[\033[38;5;15m\]:${IPLASTTETRADE}\[$(tput sgr0)\]\[\033[38;5;6m\]\[$(tput sgr0)\]\[\033[38;5;186m\][\w\[$(tput sgr0)\]\[\033[38;5;6m\]]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"
 EORSHELL_RC_INC2
 #Now compoisng final rc file for remote shell
 cat > $LAGGSHRC \
