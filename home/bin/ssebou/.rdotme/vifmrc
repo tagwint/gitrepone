@@ -109,7 +109,7 @@ endif
 
 set statusline=" H: %z%= %A %10u:%-7g %15s %20d |SelSize: %E"
 " let &statusline = $HNIP . $HOSTNAME . &statusline
-let &statusline = $HNAME . ':'. $IPLASTTETRADE . &statusline
+let &statusline = $LOGNAME . '@' . $HNAME . ':'. $IPLASTTETRADE . &statusline
 " ------------------------------------------------------------------------------
 
 " :mark mark /full/directory/path [filename]
