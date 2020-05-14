@@ -407,16 +407,20 @@ export HNAME=$(hostname -s)
 export IPLASTTETRADE=$(hostname -I|awk -F. "{ print \$NF }")
 KKNEST=
 
-if [ "$USER" = "root" ]; then
-    r="\[\033[01;38;5;124m\]r"
-    o="\[\033[01;38;5;196m\]o"
-   o2="\[\033[01;38;5;202m\]o"
-    t="\[\033[01;38;5;208m\]t"
-    __user="\[\e[7m\]$r$o$o2$t"
+if [[ "$(id -u)" == "0" ]]; then
+  _un=$(id -un)
+  _cl=208
+  __user=''
+  for i in $(seq 1 ${#_un}); do
+    _U=${_un:i-1:1}
+    __user=${__user}'\[\033[01;38;5;'${_cl}'m\]'${_U^^}
+    _cl=$(( _cl - 4 ))
+  done
 else
      __user="\[\e[01;38;2;1;200;1m\]\u"
-fi   
-nest="\[\e[01;38;2;210;10;63m\]"
+fi 
+
+nest="\e[01;38;2;210;10;63m"
 inv=$(echo -e "\e[7m")
 dim=$(echo -e "\e[2m")
 nrm=$(echo -e "\e[0m")
@@ -425,7 +429,7 @@ nrm=$(echo -e "\e[0m")
 unset KKNEST
 for i in `seq ${M_LVL:-0}`; do KKNEST="${KKNEST}·" ; done
 ## PS1 flaw: always shows $ at the prompt end, even for root, because of \$ is interpredted hard way
-export PS1="\[${nest}${inv}\]${KKNEST}\[$nrm\]${__user}\[$(tput sgr0)\]\[\033[38;5;15m\]@\[$(tput sgr0)\]\[\033[38;5;11m\]${HNAME,,}\[$(tput sgr0)\]\[\033[38;5;15m\]:${IPLASTTETRADE}\[$(tput sgr0)\]\[\033[38;5;6m\]\[$(tput sgr0)\]\[\033[38;5;186m\][\w\[$(tput sgr0)\]\[\033[38;5;6m\]]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"
+export PS1="\[${nest}\]\[${inv}\]${KKNEST}\[$nrm\]${__user}\[$(tput sgr0)\]\[\033[38;5;15m\]@\[$(tput sgr0)\]\[\033[38;5;11m\]${HNAME,,}\[$(tput sgr0)\]\[\033[38;5;15m\]:${IPLASTTETRADE}\[$(tput sgr0)\]\[\033[38;5;6m\]\[$(tput sgr0)\]\[\033[38;5;186m\][\w\[$(tput sgr0)\]\[\033[38;5;6m\]]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"
 EORSHELL_RC_INC2
 #Now compoisng final rc file for remote shell
 cat > $LAGGSHRC \
