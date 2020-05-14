@@ -97,7 +97,7 @@ precalc () {
       RO_VIMURL="vim -R $FARQ"
       LESSURL="less -R $FARQ"
       GOURL=$VIMURL
-      JUMPURL="cd $(dirname $(eval echo "$FARQ"|sed 's/^zipfile://;s/^tarfile://'))"
+      JUMPURL="$(dirname $(eval echo "$FARQ"|sed 's/^zipfile://;s/^tarfile://'))"
       # LESSURL="less -R \"$FARQ\""
       if [[ "$THELINE" =~ ^.*zipfile:.*::.* ]]; then 
         LESSURL="$RO_VIMURL"
@@ -200,7 +200,7 @@ THELINE=$(sed -n '2p' "$FSELLINES")
 
 precalc "$THELINE"
 
-
+set -x
 case $KEYPR in
     alt-o) eval ${SCP_VIEWCMD?"No scp view aka r/o edit possible for $RHOST and $FARQ"}
            ;;
@@ -212,6 +212,6 @@ case $KEYPR in
            ;;
     f9|enter) eval $GOURL
            ;;
-    alt-space) exec eval $JUMPURL
+    alt-space) if command kk ; then  exec kk  $JUMPURL; else  exec vfm $JUMPURL; fi
            ;;
 esac
