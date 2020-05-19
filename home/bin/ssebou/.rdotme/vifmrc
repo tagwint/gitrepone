@@ -136,8 +136,12 @@ command! diff vim -d %f %F
 command! hdiff  hdiff  %c %C | less
 command! ncdiff  ncdiff  %c %C
 command! meld  meld  %c %C >/dev/null 2>&1 &
+
+command! jsoncomparea vimdiff  <(jq -S . %c) <(jq -S . %C)
+command! jsoncompareb jsoncomp2  %c %C
+command! jsoncomparec  vimdiff <(jq -S 'def post_recurse(f): def r: (f | select(. != null) | r), .; r; def post_recurse: post_recurse(.[]?); (. | (post_recurse | arrays) |= sort)' %c )  <(jq -S 'def post_recurse(f): def r: (f | select(. != null) | r), .; r; def post_recurse: post_recurse(.[]?); (. | (post_recurse | arrays) |= sort)' %C )
+
 command! spplogdiff spplogdiff  %c %C 
-" .rdotme 
 command! ddif  ddif  %d/%c %C | vim -
 command! zip zip -r %f.zip %f
 command! run !! ./%f
