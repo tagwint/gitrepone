@@ -26,8 +26,15 @@ function vxyn ()
 } 
  
 SeedIt () {
+  local rov vbin vbinbase
+  
   echo -n Preparing remote environment ... 
   [ -d "$LBIN" ] && BINADDON="-C $(dirname $LBIN) $BINBASE"
+  for rov in {6..8}; do 
+    vbin=${LBIN}$rov
+    vbinbase=$(basename $vbin)
+    [ -d ${vbin} ] && BINADDON="$BINADDON -C $(dirname $vbin) ${vbinbase} "
+  done
   # this way we collect all the items by visiting their dirs and grabbing the base
   # then, on remote they are placed under the session remote dir each with its original basename
   time \
@@ -378,7 +385,8 @@ PrepIncs () {
     chmod 0755 $REMOTE_SESSION_RCDIR/${BINBASE}/ush
   fi
   if [ ! -z "\${PATH##*$REMOTE_SESSION_RCDIR/${BINBASE}*}" ] ;then
-    export PATH=$REMOTE_SESSION_RCDIR/${BINBASE}:\$PATH
+    # set OS version specific stuff first on path
+    export PATH=$REMOTE_SESSION_RCDIR/${BINBASE}${REMOSVER}:$REMOTE_SESSION_RCDIR/${BINBASE}:\$PATH
   fi
   rmc() { local sespid="\$\$" 
     history -a
@@ -665,6 +673,10 @@ sed -i '1d' $LCOPYOFBASHPROFILE
 BVER=$(ssh -q  "$C2V" 'echo $BASH_VERSION|awk -F. "{print \$1}"')
 [[ "${BVER:-0}" -lt 4 ]] && { >&2 echo "$C2V :Unsupported bash version $BVER" ; exit -1 ; }
 
+# /etc/os-release file is not there on some versions
+# REMOSVER=$(ssh -q  "$C2V" 'source <(cat /etc/os-release) ; printf "%s" ${VERSION_ID}')
+REMOSVER=$(ssh -q  "$C2V" 'cat /etc/redhat-release' | grep -o '[0-9\.]*' | awk -F. ' { print $1 } ')
+echo Remote OS version: ${REMOSVER}
 
 
 
