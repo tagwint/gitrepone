@@ -1,0 +1,2 @@
+#!/bin/bash
+echo "sudo su - ;  $(command -v ush)"
