@@ -1,6 +1,7 @@
 #!/bin/bash
 
 
+JDKROOTDIR=/opt/java
 JDKROOTDIR=/opt/mbapps/java
 JDKROOTDIR=/home/shared
 
@@ -19,5 +20,5 @@ for j in $JAVA7_HOME $JAVA8_HOME; do
 	$JKT -exportcert -keystore $JKS -alias $ALIAS -file $KSTMPF -storepass $JKSPAS
 	openssl x509 -inform der -in $KSTMPF 
 	echo ================= FROM $ALIAS SERVER
-	openssl s_client -connect ${ALIAS}:443 </dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' 
+	openssl s_client -servername ${ALIAS} -connect ${ALIAS}:443 </dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' 
 done 
