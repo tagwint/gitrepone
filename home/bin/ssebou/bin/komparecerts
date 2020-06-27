@@ -10,15 +10,13 @@ JAVA7_HOME=${JDKROOTDIR}/jdk1.7.0_80
 
 ALIAS=$(hostname).maxbill.com
 
-KSTMPF=/tmp/ks.cert
 JKSPAS=changeit
 for j in $JAVA7_HOME $JAVA8_HOME; do 
 	[[ -x "$j" ]] || { echo "JAVA_HOME not found there: $j" ; continue ; }
 	JKS=$j/jre/lib/security/cacerts
 	JKT=$j/bin/keytool
 	echo ================= FROM $JKS KEYSTORAGE
-	$JKT -exportcert -keystore $JKS -alias $ALIAS -file $KSTMPF -storepass $JKSPAS
-	openssl x509 -inform der -in $KSTMPF 
+	$JKT -exportcert -keystore $JKS -alias $ALIAS -storepass $JKSPAS | openssl x509 -inform der | md5sum
 	echo ================= FROM $ALIAS SERVER
-	openssl s_client -servername ${ALIAS} -connect ${ALIAS}:443 </dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' 
+	openssl s_client -servername ${ALIAS} -connect ${ALIAS}:443 </dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p'| md5sum 
 done 
