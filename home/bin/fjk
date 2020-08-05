@@ -30,11 +30,12 @@ SeedIt () {
   
   echo -n Preparing remote environment ... 
   [ -d "$LBIN" ] && BINADDON="-C $(dirname $LBIN) $BINBASE"
-  for rov in {6..8}; do 
-    vbin=${LBIN}$rov
-    vbinbase=$(basename $vbin)
-    [ -d ${vbin} ] && BINADDON="$BINADDON -C $(dirname $vbin) ${vbinbase} "
-  done
+  ## echo REMOSVER is ${REMOSVER:-Undef}; read
+  ## if there is version specific bins, add it 
+  rov=${REMOSVER:-undef}
+  vbin=${LBIN}$rov
+  vbinbase=$(basename $vbin)
+  [ -d ${vbin} ] && BINADDON="$BINADDON -C $(dirname $vbin) ${vbinbase} "
   # this way we collect all the items by visiting their dirs and grabbing the base
   # then, on remote they are placed under the session remote dir each with its original basename
   time \
@@ -385,8 +386,10 @@ PrepIncs () {
     chmod 0755 $REMOTE_SESSION_RCDIR/${BINBASE}/ush
   fi
   if [ ! -z "\${PATH##*$REMOTE_SESSION_RCDIR/${BINBASE}*}" ] ;then
-    # set OS version specific stuff first on path
-    export PATH=$REMOTE_SESSION_RCDIR/${BINBASE}${REMOSVER}:$REMOTE_SESSION_RCDIR/${BINBASE}:\$PATH
+    # extend PATH with session bin
+    export PATH=$REMOTE_SESSION_RCDIR/${BINBASE}:\$PATH
+    # if there's more specific bins, add them to path front
+    [ -d "$REMOTE_SESSION_RCDIR/${BINBASE}${REMOSVER}" ] && export PATH=$REMOTE_SESSION_RCDIR/${BINBASE}${REMOSVER}:\$PATH
   fi
   rmc() { local sespid="\$\$" 
     history -a
@@ -583,7 +586,7 @@ grep -i '^Host\s*' ~/.ssh/config |
 # otherwise use fzf for selection
 # also using non-existant default in case _RHOST still empty to force grep not match it
 
-KHN=$(grep  "${_RHOST:-EMPTYHOSTNAME}" "$KHF" | wc -l)
+KHN=$(grep -i "${_RHOST:-EMPTYHOSTNAME}" "$KHF" | wc -l)
    # echo $KHN
 if grep -w -q  "^${_RHOST:-EMPTYHOSTNAME}$" "$KHF"
 then 
