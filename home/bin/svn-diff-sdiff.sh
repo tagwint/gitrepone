@@ -22,4 +22,4 @@ RFile=${6}
 # echo "$@"
 # echo ---------------
 
-sdiff -s ${LFile} ${RFile}
+sdiff -s -w 179 ${LFile} ${RFile}
