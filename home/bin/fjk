@@ -379,6 +379,7 @@ PrepIncs () {
   export ONTO4_HDIFFPORT=2323
   export ONTO4_HDIFFHOST=${CORPDIFF7}
   export ONTO4_RHASTEURL="http://hb7.maxbill.com"
+  export IGNOREEOF=2
   export INCC="\$(date)"
   export MYVIFMRC=$REMOTE_SESSION_RCDIR/${RDOTMEBASE}/vifmrc
   if [ ! -f "$REMOTE_SESSION_RCDIR/${BINBASE}/ush" ] ;then
