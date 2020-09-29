@@ -37,7 +37,7 @@ else
 fi
 
 echo Getting KR password for user [$u]
-p=$(KRPWD $u)
+p=$(KRPWDE $u)
 #echo Got p =$p=
 #p=$(sed 's/#/\\#/g' <<<"$p") # otherwise hash interpreded as comment by shell which ruins cmd
 
