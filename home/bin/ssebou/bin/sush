@@ -1,2 +1,3 @@
 #!/bin/bash
 echo "sudo su - ;  $(command -v ush)"
+sudo su -c "bash `which ush`"
