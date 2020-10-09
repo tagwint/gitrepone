@@ -465,6 +465,14 @@ bindcode $mod+$r_code mode "resize"
 
 bindcode $mod+Shift+$v_code mode "$sound_volume"
 
+# class                 border  backgr. text    indicator child_border
+client.focused          #3D2466 #3D2466 #F0F4F9 #2e9ef4   #285577
+client.focused_inactive #333333 #5f676a #ffffff #484e50   #5f676a
+client.unfocused        #333333 #222222 #888888 #292d2e   #222222
+client.urgent           #2f343a #900000 #ffffff #900000   #900000
+client.placeholder      #000000 #0c0c0c #ffffff #000000   #0c0c0c
+
+client.background       #ffffff
 #exec_always --no-startup-id i3-msg 'workspace $ws3; exec --no-startup-id ~/bin/vx/doitup_skype'
 #exec --no-startup-id  ~/bin/vx/doitup_skype
 
@@ -479,7 +487,7 @@ bar {
         statusline #ffffff
         separator #666666
 
-        focused_workspace  #4c7899 #285577 #ffffff active_workspace   #333333 #5f676a #ffffff inactive_workspace #333333 #222222 #888888 #        urgent_workspace   #2f343a #900000 #ffffff
+        focused_workspace  #3D2466 #3D2466 #ffffff active_workspace   #333333 #5f676a #ffffff inactive_workspace #333333 #222222 #888888 #        urgent_workspace   #2f343a #900000 #ffffff
         urgent_workspace   #2f343a #ff9900 #ffffff
         binding_mode       #2f343a #003300 #ffffff
     }   
@@ -491,6 +499,10 @@ assign [class="^Firefox$"]                  → 2 $ws2
 
 assign [class="^Skype$"]                    → 3 $ws3 
 for_window [class="^Skype$"] focus 
+
+#Microsoft Teams
+assign [class=".icrosoft .eams"] → 5 $ws5
+for_window [class=".icrosoft .eams"] focus
 
 assign [class=".oogle-.hrome" title="^(?!mutt).*$"] → 7 $ws7
 # assign [title="^.*Google Chrome$"]          → 7 $ws7
