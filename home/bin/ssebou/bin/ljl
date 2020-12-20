@@ -1,0 +1,3 @@
+#!/bin/bash
+journalctl -o short-iso -e -u $(systemctl list-units *.service --plain | fzf | awk '{ print $1 }') "$@"
+
