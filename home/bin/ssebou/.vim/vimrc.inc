@@ -342,3 +342,5 @@ autocmd BufWinLeave * silent let g:cbname=expand('%:p') | let g:n2save = len(g:c
 "
 " select last paste in visual mode
 nnoremap <expr> gb '`[' . strpart(getregtype(), 0, 1) . '`]'
+
+autocmd FileType apache setlocal commentstring=#\ %s
