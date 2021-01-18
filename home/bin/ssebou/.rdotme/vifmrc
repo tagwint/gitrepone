@@ -429,17 +429,23 @@ set vifminfo=dhistory,chistory,state,tui,shistory,
 
 " Sample mappings
 
-" Start shell in current directory
-" nnoremap s :shell<cr>
-command ush ush %d
-nnoremap s :if  $HISTKEEP3 != ''  
-                \| :ush
+" Start shell in current directory, in-place or in a new tmux pane if running
+" from under tmux
+nnoremap ,v :if  $TMUX != '' 
+		\| :tpanev
+		\|:else
+		\| :shell
+		\|:endif<cr>
+
+nnoremap ,h :if  $TMUX != '' 
+		\| :tpaneh
 		\|:else
 		\| :shell
 		\|:endif<cr>
 
 " Always in the same win, regardless tumx
-nnoremap <a-s> :shell<cr>
+nnoremap s :shell<cr>
+" nnoremap <a-s> :shell<cr>
 " nnoremap s :shell<cr>
 
 " Display sorting dialog
@@ -569,4 +575,11 @@ nnoremap yr :!echo -n %c:r | xclip %i<cr>
 
 set syscalls
 
+command! FZFfind : set noquickview
+                \| let $FZF_PICK = term('find | fzf-tmux  2>/dev/tty')
+                \| if $FZF_PICK != ''
+                \|     execute 'goto' fnameescape($FZF_PICK)
+                \| endif
+
+nnoremap <a-f> :FZFfind<cr>
 " vim: ft=vim
