@@ -151,7 +151,9 @@ command! vgrep vim "+grep %a"
 command! reload :write | restart
 "command! fzf :execute '!fzf 2>&0 %%U' | normal! gf
 command! fzf vifm --remote --select "$(my__fzf_select__)"
-command! tpane :!tmux splitw -v -p20
+" -p below means percents
+command! tpaneh :!tmux splitw -h -p50
+command! tpanev :!tmux splitw -v -p50
 
 "    \ | let $SSH_FILE = system("mktemp /tmp/_$SSHFN.ssh")
 "    \ : let $SSHFN = system('echo  %a | tr "/@:" "___"')
@@ -511,6 +513,12 @@ nnoremap [e
 
 command vv vv
 nnoremap ,, :!vv <cr>
+nnoremap <wait> <space>v :!less -r %f<cr>
+nnoremap <wait> <space><space> <c-i>
+nnoremap <wait> <space>d :diff
+nnoremap <wait> <space>c :compare
+nnoremap <wait> <space>s :sync<cr>
+nnoremap        xx :exit<cr>
 
 nnoremap ,b :set viewcolumns=-{name}..,20{}.<cr>
 nnoremap ,d :set viewcolumns=-{name}.,10{perms},12{uname},-7{gname},10{size}.,20{mtime}<cr>
