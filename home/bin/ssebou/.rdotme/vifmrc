@@ -152,8 +152,8 @@ command! reload :write | restart
 "command! fzf :execute '!fzf 2>&0 %%U' | normal! gf
 command! fzf vifm --remote --select "$(my__fzf_select__)"
 " -p below means percents
-command! tpaneh :!tmux splitw -h -p50
-command! tpanev :!tmux splitw -v -p50
+command! tpaneh :!tmux splitw -h -p50  ush
+command! tpanev :!tmux splitw -v -p50  ush
 
 "    \ | let $SSH_FILE = system("mktemp /tmp/_$SSHFN.ssh")
 "    \ : let $SSHFN = system('echo  %a | tr "/@:" "___"')
@@ -433,20 +433,22 @@ set vifminfo=dhistory,chistory,state,tui,shistory,
 
 " Start shell in current directory, in-place or in a new tmux pane if running
 " from under tmux
-nnoremap ,v :if  $TMUX != '' 
+command ush ush %d
+
+nnoremap ,v :if $TMUX != ''
 		\| :tpanev
 		\|:else
-		\| :shell
+		\| :ush
 		\|:endif<cr>
 
-nnoremap ,h :if  $TMUX != '' 
+nnoremap ,h :if $TMUX != '' 
 		\| :tpaneh
 		\|:else
-		\| :shell
+		\| :ush
 		\|:endif<cr>
 
 " Always in the same win, regardless tumx
-nnoremap s :shell<cr>
+nnoremap s :ush<cr>
 " nnoremap <a-s> :shell<cr>
 " nnoremap s :shell<cr>
 
