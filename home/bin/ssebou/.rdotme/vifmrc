@@ -152,8 +152,8 @@ command! reload :write | restart
 "command! fzf :execute '!fzf 2>&0 %%U' | normal! gf
 command! fzf vifm --remote --select "$(my__fzf_select__)"
 " -p below means percents
-command! tpaneh :!tmux splitw -h -p50  ush
-command! tpanev :!tmux splitw -v -p50  ush
+command! tpaneh :!tmux splitw -h -p50 $USH
+command! tpanev :!tmux splitw -v -p50 $USH
 
 "    \ | let $SSH_FILE = system("mktemp /tmp/_$SSHFN.ssh")
 "    \ : let $SSHFN = system('echo  %a | tr "/@:" "___"')
@@ -373,7 +373,7 @@ filextype */
         \ {View in thunar}
         \ Thunar %f &,
 
-filetype * less -r
+
 " Syntax highlighting in preview
 "
 " Explicitly set highlight type for some extensions
@@ -429,26 +429,38 @@ set vifminfo=dhistory,chistory,state,tui,shistory,
 
 " ------------------------------------------------------------------------------
 
-" Sample mappings
 
+if  $HISTKEEP3 != '' 
+    let $USH='ush'
+    command usershell :!ush
+    filetype * less -r
+else 
+    command usershell :shell
+endif
+
+if  $TMUX != '' 
+    command commav :tpanev 
+    command commah :tpaneh
+else 
+    command commav :echo "No TMUX for v" 
+    command commah :echo "No TMUX for h"
+    " remember to quote values when defining variables like this:
+    let $_MSGNUT='yes, under tmux'
+    let $_MSGNUT='NOT under tmux'
+endif
+
+
+
+" Sample mappings
 " Start shell in current directory, in-place or in a new tmux pane if running
 " from under tmux
-command ush ush %d
+"
+nnoremap ,v :commav<cr>
+nnoremap ,h :commah<cr>
 
-nnoremap ,v :if $TMUX != ''
-		\| :tpanev
-		\|:else
-		\| :ush
-		\|:endif<cr>
-
-nnoremap ,h :if $TMUX != '' 
-		\| :tpaneh
-		\|:else
-		\| :ush
-		\|:endif<cr>
 
 " Always in the same win, regardless tumx
-nnoremap s :ush<cr>
+nnoremap s :usershell<cr>
 " nnoremap <a-s> :shell<cr>
 " nnoremap s :shell<cr>
 
