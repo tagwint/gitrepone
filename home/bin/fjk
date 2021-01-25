@@ -679,9 +679,15 @@ BVER=$(ssh -q  "$C2V" 'echo $BASH_VERSION|awk -F. "{print \$1}"')
 
 # /etc/os-release file is not there on some versions
 # REMOSVER=$(ssh -q  "$C2V" 'source <(cat /etc/os-release) ; printf "%s" ${VERSION_ID}')
-REMOSVER=$(ssh -q  "$C2V" 'cat /etc/redhat-release' | grep -o '[0-9\.]*' | awk -F. ' { print $1 } ')
+REMOSVER=$(set -o pipefail; ssh -q  "$C2V" 'set -o pipefail;  cat /etc/redhat-release' | grep -o '[0-9\.]*' | awk -F. ' { print $1 } ')
+RHEC=$?
+set -x 
+[[ ! ${RHEC:-0} -eq 0 ]] && { REMOSVER=$(set -o pipefail; ssh -q  "$C2V" 'set -o pipefail;  cat /etc/debian_version' | head -n 1  | awk -F/ ' { print $1 } ')
+DEBEC=$?
+[[ ! ${DEBEC:-0} -eq 0 ]] && { echo Unknown OS ; exit 1; }
+}
 echo Remote OS version: ${REMOSVER}
-
+set +x 
 
 
 # Remote dir for particular session where the Guard is set first
