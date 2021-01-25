@@ -8,9 +8,11 @@ TMPDIR=$HOME/.tempx
 TNAME=$(mktemp  -p  $TMPDIR )
 trap "rm $TNAME" EXIT
 echo username=$CORPUSER>$TNAME
-echo password=$(KRPWD ${CORPUSER}@${CORPDOMAIN})>>$TNAME
+echo password=$(KRPWDE ${CORPUSER}@${CORPDOMAIN})>>$TNAME
 chmod 0600 $TNAME
-sudo mount -t cifs //${CORPSHAREHOST}/$SHARENAME $MOUNTP -o credentials=${TNAME},uid=$(id -u $(id -un)),sec=ntlm,vers=1.0 
+# sudo mount -t cifs //${CORPSHAREHOST}/$SHARENAME $MOUNTP -o credentials=${TNAME},uid=$(id -u $(id -un)),sec=ntlm,vers=1.0 
+# noauto, _netdev options suggested in https://flexion.org/posts/2014-07-nfs-and-cifs-mounts-with-systemd/
+sudo mount -t cifs //${CORPSHAREHOST}/$SHARENAME $MOUNTP -o credentials=${TNAME},uid=$(id -u $(id -un)),sec=ntlm,vers=1.0,noauto,_netdev 
 EC=$?
 [[ ! ${EC} -eq 0 ]] && echo exited with code $EC
 [[ ${EC} -eq 0 ]]  && { echo Successfully mounted ${SHARENAME} on $MOUNTP ; vfm $MOUNTP; }
