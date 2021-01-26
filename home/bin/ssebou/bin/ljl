@@ -1,3 +1,3 @@
 #!/bin/bash
-journalctl -o short-iso -e -u $(systemctl list-unit-files *.service --plain | fzf | awk '{ print $1 }') "$@" | sort
+journalctl -o short-precise -e -u $(systemctl list-unit-files *.service --plain | fzf | awk '{ print $1 }') "$@" | sort
 
