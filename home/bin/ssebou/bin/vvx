@@ -133,12 +133,12 @@ precalc () {
         :
       fi
  fi
- echo f3 . . . . . . : LESSURL....=$LESSURL 
- echo f4 . . . . . . : VIMURL.....=$VIMURL
- echo alt-o  . . . . : SCP_VIEWCMD=$SCP_VIEWCMD
- echo alt-i  . . . . : SCP_EDITCMD=$SCP_EDITCMD
- echo enter,c-cpace  : GOURL......=$GOURL
- echo alt-space:JUMPURL is ${JUMPURL:-Undefined}
+ echo "f3 . . . . . . . : LESSURL....=$LESSURL"
+ echo "f4 . . . . . . . : VIMURL.....=$VIMURL"
+ echo "alt-o  . . . . . : SCP_VIEWCMD=$SCP_VIEWCMD"
+ echo "alt-i  . . . . . : SCP_EDITCMD=$SCP_EDITCMD"
+ echo "enter,ctrl-space : GOURL......=$GOURL"
+ echo "alt-space  . . . : JUMPURL....=${JUMPURL:-Undefined}"
  echo "========================= CONTENT PREVIEW : "
  if [[ ! "$FARQ" =~ ^zipfile:/.* ]]; then
      if samehost $RHOST ; then
