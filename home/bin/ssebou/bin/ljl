@@ -1,3 +1,26 @@
 #!/bin/bash
-journalctl -o short-precise -e -u $(systemctl list-unit-files *.service --plain | fzf | awk '{ print $1 }') "$@" | sort
+
+export FZF_DEFAULT_OPTS=$FZF_DEFAULT_OPTS'
+ --color=fg:#279bc2,bg:#1f1410,hl:#5f87af
+ --color=fg+:#41fade,bg+:#262626,hl+:#5fd7ff
+ --color=info:#afaf87,prompt:#d7005f,pointer:#ff5c5c
+ --color=marker:#87ff00,spinner:#af5fff,header:#87afaf'
+
+SELUNIT=\
+$(systemctl list-unit-files \*.service --plain \
+  | grep -v '^UNIT' \
+  | fzf --preview "systemctl status {1}" --preview-window bottom:50% \
+  | awk '{ print $1 }') \
+  || { echo Could not select unit; exit 1; }
+
+
+SYSTEMDVER=$(systemctl --version |awk '/^systemd/ { print $2 }')
+echo Getting entries for $SELUNIT, may take a while  ...
+if [[ ${SYSTEMDVER:-0} -gt 233 ]] ; then 
+  FMT=short-iso-precise
+  journalctl -o $FMT -e -u $SELUNIT "$@" | sort
+else 
+  FMT=short-precise
+  journalctl -o $FMT -e -u $SELUNIT "$@" 
+fi 
 
