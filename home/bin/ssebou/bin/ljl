@@ -6,14 +6,44 @@ export FZF_DEFAULT_OPTS=$FZF_DEFAULT_OPTS'
  --color=info:#afaf87,prompt:#d7005f,pointer:#ff5c5c
  --color=marker:#87ff00,spinner:#af5fff,header:#87afaf'
 
+export BB=/tmp/${RANDOM}
+
+bulcont () {
+  local -r BFILE="$1"
+  local -r CMD="$2"
+  if [[ -f "${BFILE:-/nonexisTant}" ]]; then
+    cat $BFILE | awk '{ print $1 }' | xargs sudo systemctl ${CMD:-status} >> /tmp/abc
+  fi
+}
+
+viewlog () {
+  exec less /tmp/abc
+}
+
+cleanup () {
+  [[ -f ${BB:-NoNexisTant} ]] && rm $BB
+}
+
+trap cleanup INT TERM EXIT HUP
+
+export -f bulcont
+#TODO: viewlog
+export -f viewlog
+export GREP_COLORS='ms=01;33:mc=01;31:sl=:cx=:fn=35:ln=32:bn=32:se=36'
+
 SELUNIT=\
 $(systemctl list-unit-files \*.service --plain \
   | grep -v '^UNIT' \
-  | fzf --preview "systemctl status {1}" --preview-window bottom:50% \
+  | fzf --preview "systemctl status {1}|grep --color=always -E 'Active: .*|$'" \
+    --preview-window bottom:50% \
+    --header="f5:start:  f8:stop" \
+    --bind "f3:execute(viewlog {})" \
+    --bind "f5:execute-multi(printf \"%s\n\" {}>$BB  ; bulcont $BB start )" \
+    --bind "f8:execute-multi(printf \"%s\n\" {}>$BB  ; bulcont $BB stop )" \
   | awk '{ print $1 }') \
   || { echo Could not select unit; exit 1; }
 
-
+test ${SELUNIT:-NOPE} == NOPE && { echo No unit selected, cancelling ... ; exit 0 ; }
 SYSTEMDVER=$(systemctl --version |awk '/^systemd/ { print $2 }')
 echo Getting entries for $SELUNIT, may take a while  ...
 if [[ ${SYSTEMDVER:-0} -gt 233 ]] ; then 
