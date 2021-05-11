@@ -177,14 +177,19 @@ BCTS=$(date -d "-1 days" --iso-8601='sec')
 # when on collector there are many of history files collected
 # when on remote, there's probably only one default
 
+
 GREPALLEDITED="grep -a -H . $VIMHISTMASK"
 
-( eval $GREPALLEDITED ; ( sed '/^[0-9]*:/!d;s/[^:]*: //' $TF1  | ts "${HOSTNAME}.${VIMHISTEXT}:${BCTS}" )) |
+FZFEXE=fzf
+# FZFEXE=fzf24.3
+# ( eval $GREPALLEDITED ; ( sed '/^[0-9]*:/!d;s/[^:]*: //' $TF1  | ts "${HOSTNAME}.${VIMHISTEXT}:${BCTS}" )) |
+# below differs from above by ts utility substitute with gawk
+( eval $GREPALLEDITED ; ( sed '/^[0-9]*:/!d;s/[^:]*: //' $TF1  |  gawk "{ print strftime(\"${HOSTNAME}.${VIMHISTEXT}:${BCTS}\")}" )) |
 # swap columns like: ts hostname file  to uniquize by host+file
 sed 's|^\([^:]*\)\(:\)\(.[^ ]*\)\(.*\)|\3:=\1\4|' |
 sed 's|^\(...................\)[^=]*\(.*\)$|\1 \2|' | sort -r |
 awk -F= '!seen[$2]++'  | 
-fzf --header="see preview for insturctions. alt-t to toggle preview window " --expect="alt-space,alt-o,alt-i,f3,f4,f9,enter,ctrl-space" \
+$FZFEXE --header="see preview for insturctions. alt-t to toggle preview window " --expect="alt-space,alt-o,alt-i,f3,f4,f9,enter,ctrl-space" \
     --preview "precalc {}" \
     --preview-window down:40% \
     --bind "alt-t:toggle-preview" \
@@ -200,7 +205,7 @@ THELINE=$(sed -n '2p' "$FSELLINES")
 
 precalc "$THELINE"
 
-set -x
+# set -x
 case $KEYPR in
     alt-o) eval ${SCP_VIEWCMD?"No scp view aka r/o edit possible for $RHOST and $FARQ"}
            ;;
