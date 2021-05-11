@@ -143,7 +143,7 @@ tcport () {
  local H P
  H=${1:-localhost}
  P=${2:-22}
- (echo >/dev/tcp/${H}/${P}) &>/dev/null && echo "${H}:${P} is open" || echo "${H}:${P} is closed"
+ (timeout 2 echo >/dev/tcp/${H}/${P}) &>/dev/null && echo "${H}:${P} is open" || echo "${H}:${P} is closed"
 }
 
 lnbdiff () {
@@ -339,6 +339,7 @@ preexec_functions+=(keep_hist_there)
 
 alias fn="tmux -f ${THISP}/${RDOTMEBASE}/tmux.conf new -s " 
 alias f='tmuxa '
+alias fq='hostname -f'
 
 # export -f keep_hist_there ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain
 export -f lnbdiff hdiff ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain scolt ak_fingerprints 
