@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 #
+
 SHARENAME=${1?"Specify share name"}
 MOUNTP=${2:-/mnt/LNB/$SHARENAME}
 [ -d $MOUNTP ] || mkdir -p $MOUNTP || { echo Could not create  mount point in $MOUNTP; exit 1;  }
@@ -8,12 +9,13 @@ TMPDIR=$HOME/.tempx
 TNAME=$(mktemp  -p  $TMPDIR )
 trap "rm $TNAME" EXIT
 echo username=$CORPUSER>$TNAME
-echo password=$(KRPWDE ${CORPUSER}@${CORPDOMAIN})>>$TNAME
+echo password=$(KRPWDA ${CORPUSER}@${CORPDOMAIN})>>$TNAME
 chmod 0600 $TNAME
 # sudo mount -t cifs //${CORPSHAREHOST}/$SHARENAME $MOUNTP -o credentials=${TNAME},uid=$(id -u $(id -un)),sec=ntlm,vers=1.0 
-# noauto, _netdev options suggested in https://flexion.org/posts/2014-07-nfs-and-cifs-mounts-with-systemd/
-sudo mount -t cifs //${CORPSHAREHOST}/$SHARENAME $MOUNTP -o credentials=${TNAME},uid=$(id -u $(id -un)),sec=ntlm,vers=1.0,noauto,_netdev 
+sudo mount -t cifs //${CORPSHAREHOST}/$SHARENAME $MOUNTP -o credentials=${TNAME},uid=$(id -u $(id -un)),iocharset=utf8
+
 EC=$?
+
 [[ ! ${EC} -eq 0 ]] && echo exited with code $EC
 [[ ${EC} -eq 0 ]]  && { echo Successfully mounted ${SHARENAME} on $MOUNTP ; vfm $MOUNTP; }
 [[ ${EC} -eq 32 ]] && vfm $MOUNTP ## alreadymounted earlier
