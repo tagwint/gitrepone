@@ -412,6 +412,7 @@ PrepIncs () {
   if [ ! -z "\${PATH##*$REMOTE_SESSION_RCDIR/${BINBASE}*}" ] ;then
     # extend PATH with session bin
     export PATH=$REMOTE_SESSION_RCDIR/${BINBASE}:\$PATH
+    # export PATH_A=$REMOTE_SESSION_RCDIR/${BINBASE}
     # if there's more specific bins, add them to path front
     [ -d "$REMOTE_SESSION_RCDIR/${BINBASE}${REMOSVER}" ] && export PATH=$REMOTE_SESSION_RCDIR/${BINBASE}${REMOSVER}:\$PATH
   fi
@@ -702,14 +703,12 @@ BVER=$(ssh -q  "$C2V" 'echo $BASH_VERSION|awk -F. "{print \$1}"')
 
 # /etc/os-release file is not there on some versions
 # REMOSVER=$(ssh -q  "$C2V" 'source <(cat /etc/os-release) ; printf "%s" ${VERSION_ID}')
-REMOSVER=$(set -o pipefail; ssh -q  "$C2V" 'set -o pipefail;  cat /etc/redhat-release' | grep -o '[0-9\.]*' | awk -F. ' { print $1 } ')
-RHEC=$?
-
-[[ ! ${RHEC:-0} -eq 0 ]] && { REMOSVER=$(set -o pipefail; ssh -q  "$C2V" 'set -o pipefail;  cat /etc/debian_version' | head -n 1  | awk -F/ ' { print $1 } ')
-DEBEC=$?
-[[ ! ${DEBEC:-0} -eq 0 ]] && { echo Unknown OS ; exit 1; }
-[[ "$REMOSVER" =~ 10.. ]] && REMOSVER=buster
+REMOSVER=$(ssh -q  "$C2V" 'cat /etc/redhat-release 2>/dev/null' | grep -o '[0-9\.]*' | awk -F. ' { print $1 } ')
+[[ ${REMOSVER:-NotRH} == 'NotRH' ]] && {
+  DREMOSVER=$(ssh -q  "$C2V" 'cat /etc/debian_version' | grep -o '[0-9\.]*' | awk -F. ' { print $1 } ')
+  REMOSVER=$(( ${DREMOSVER:-9} - 2 ))
 }
+echo DRemote OS version: ${DREMOSVER}
 echo Remote OS version: ${REMOSVER}
 
 
