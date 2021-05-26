@@ -340,6 +340,7 @@ preexec_functions+=(keep_hist_there)
 alias fn="tmux -f ${THISP}/${RDOTMEBASE}/tmux.conf new -s " 
 alias f='tmuxa '
 alias fq='hostname -f'
+alias ll='ls -lha --color=auto'
 
 function dinsp () {
   local dcname

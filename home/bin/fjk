@@ -51,7 +51,7 @@ function vxyn ()
 SeedIt () {
   local rov vbin vbinbase
   
-  echo -n Preparing remote environment ... 
+  echo  Preparing remote environment ... 
   [ -d "$LBIN" ] && BINADDON="-C $(dirname $LBIN) $BINBASE"
   ## echo REMOSVER is ${REMOSVER:-Undef}; read
   ## if there is version specific bins, add it 
@@ -65,7 +65,7 @@ SeedIt () {
   tar zc -C $(dirname $SSHVIMRP)   $(basename $SSHVIMRP) \
          -C $(dirname $LDOTMES)    $(basename $LDOTMES)  \
          -C $(dirname $LAGGSHRC)   $(basename $LAGGSHRC) \
-         -C $(dirname $LSHELL_AUXRC) $(basename $LSHELL_AUXRC) $BINADDON   |
+         -C $(dirname $LSHELL_AUXRC) $(basename $LSHELL_AUXRC) $BINADDON   | pv -s 7431110|
   ssh  $RCONN "mkdir -p $REMOTE_SESSION_RCDIR ; tar  zxf  - -C $REMOTE_SESSION_RCDIR " 
   # TODO: --skip-old-files option of tar is of little use, it does not speedup things
   # think about rsync option for every 2+ session
@@ -491,7 +491,8 @@ callIshell () {
     RCMD0="$@"
     RCMD1=exit
   else 
-    RCMD0='echo Hello'
+    # RCMD0='echo Hello'
+    RCMD0='w ; date ; hostname -f '
     RCMD1=':'
   fi
   LTERM=$TRM
