@@ -527,7 +527,7 @@ nnoremap [e
 
 command vv vv
 nnoremap ,, :!vv <cr>
-nnoremap <wait> <space>v :!less -r %f<cr>
+nnoremap <wait> <space>v :!vim -R %f<cr>
 nnoremap <wait> <space><space> <c-i>
 nnoremap <wait> <space>d :diff
 nnoremap <wait> <space>c :compare

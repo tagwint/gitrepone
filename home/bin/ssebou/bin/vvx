@@ -219,6 +219,6 @@ case $KEYPR in
            ;;
     f9|enter|ctrl-space) eval $GOURL
            ;;
-    alt-space) if command kk ; then  exec kk  $JUMPURL; else  exec vfm $JUMPURL; fi
+    alt-space) if type kk ; then  exec kk  $JUMPURL; else  exec vfm $JUMPURL; fi
            ;;
 esac
