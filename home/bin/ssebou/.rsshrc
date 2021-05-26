@@ -341,8 +341,25 @@ alias fn="tmux -f ${THISP}/${RDOTMEBASE}/tmux.conf new -s "
 alias f='tmuxa '
 alias fq='hostname -f'
 
+function dinsp () {
+  local dcname
+  command docker --version || { echo No docker here on $(hostname -f) ; return 1 ; }
+  dcname=$(docker ps -a --format '{{.Names}}' | fzf) || return 1
+  echo Entering  $dcname container ...
+  docker inspect $*  $dcname | jq . -C | less -R
+}
+
+function dosh () {
+  local dcname
+  command docker --version || { echo No docker here on $(hostname -f) ; return 1 ; }
+  dcname=$(docker ps -a --format '{{.Names}}' | fzf) || return 1
+  echo Entering  $dcname container ...
+  docker exec -ti $* -e PS1='[\u@\h \W]'$dcname'$' $dcname /bin/bash
+}
+
+
 # export -f keep_hist_there ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain
-export -f lnbdiff hdiff ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain scolt ak_fingerprints 
+export -f lnbdiff hdiff ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain scolt ak_fingerprints dosh dinsp
 
 # export FZF_DEFAULT_OPTS="--exact --tiebreak=begin --color=dark,hl:220,hl+:226,fg:36,bg+:240,fg+:86,pointer:0,marker:1  --bind=*:toggle,alt-j:jump-accept  -m"
 export FZF_DEFAULT_OPTS="--exact --tiebreak=begin --bind=*:toggle,alt-j:jump-accept  -m"

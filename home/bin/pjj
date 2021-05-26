@@ -597,7 +597,7 @@ FSELLINES=$(t0b)
 #ssh -q "$RCONN" "$RFINDCMD  -iregex \"^.*${FPAT}.*$\" " 2>"${SELERRLOG}" |
 
 export PATPART=
-RFINDCMD="ps --no-headers -eo pid,user,cmd | grep $FPAT"
+RFINDCMD="ps --no-headers -eo pid,user,cmd | grep ${FPAT:-.}"
 
 #RBLDLISTCMD="$RFINDCMD $PATPART $FNAMEGREPFLTR " 
 #echo ssh -q "$RCONN" $RBLDLISTCMD 
@@ -610,7 +610,8 @@ echo Done
 
 # trap to cleanup all temp files with our prefix on exit
 trap finish  exit
-echo DEBUG:"ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR"
+# echo DEBUG:"rfindcmd is $RFINDCMD"
+# echo DEBUG:"ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR"
 echo DEBUG:FZF_DEFAULT_OPTS: "$FZF_DEFAULT_OPTS"
 	 # --nth=-1 \
 ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR | 

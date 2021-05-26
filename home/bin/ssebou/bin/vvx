@@ -183,6 +183,8 @@ GREPALLEDITED="grep -a -H . $VIMHISTMASK"
 FZFEXE=fzf
 # FZFEXE=fzf24.3
 # ( eval $GREPALLEDITED ; ( sed '/^[0-9]*:/!d;s/[^:]*: //' $TF1  | ts "${HOSTNAME}.${VIMHISTEXT}:${BCTS}" )) |
+# plain awk, no gawk:
+# ( eval $GREPALLEDITED ; ( sed '/^[0-9]*:/!d;s/[^:]*: //' $TF1  | { TS="${HOSTNAME}.${VIMHISTEXT}:${BCTS}" ;  awk -v TS=$TS "{ print TS }" ; } )) 
 # below differs from above by ts utility substitute with gawk
 ( eval $GREPALLEDITED ; ( sed '/^[0-9]*:/!d;s/[^:]*: //' $TF1  |  gawk "{ print strftime(\"${HOSTNAME}.${VIMHISTEXT}:${BCTS}\")}" )) |
 # swap columns like: ts hostname file  to uniquize by host+file

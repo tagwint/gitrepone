@@ -7,14 +7,14 @@
 ## GXP=$(( Xaxis * 3 / 4 ))
 ## GYP=$(( Yaxis * 3 / 5 ))
 ## # sizes in symbols for others
-GXS=$(( $(tput cols) * 15 / 15 ))
+GXS=$(( $(tput cols) * 12 / 15 ))
 GYS=$(( $(tput lines) * 12 / 15 ))
 
 GEOP="--geometry=${GXP}x${GYP}"
 GEOS="--geometry=${GXS}x${GYS}"
 TRM="xfce4-terminal $GEOS --command="
-TRM="tilix $GEOS --title=FLLOAT --profile=Molo --command="
-TRM="tilix $GEOS --title=FLLOAT --profile=Molo -e "
+# TRM="tilix $GEOS --title=FLLOAT --profile=Molo --command="
+# TRM="tilix $GEOS --title=FLLOAT --profile=Molo -e "
 #TRM="lxterminal $GEOS --command="
 #TRM="roxterm $GEOP -e "
 LOG=/tmp/jjterm.log
