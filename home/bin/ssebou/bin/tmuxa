@@ -22,7 +22,9 @@ else
   tmux select-pane -t "$SP"
   if [ -z "${TMUX}" ] 
   then 
-    tmux a -d -t  "$SP" 
+    tmux a  -t  "$SP" 
+    # Decided to not detach by default, if needed use -d explicitly from command line
+    # tmux a -d -t  "$SP" 
   else 
     tmux switch-client -t "$SP" 
   fi
