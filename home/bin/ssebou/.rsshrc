@@ -341,6 +341,7 @@ alias fn="tmux -f ${THISP}/${RDOTMEBASE}/tmux.conf new -s "
 alias f='tmuxa '
 alias fq='hostname -f'
 alias ll='ls -lha --color=auto'
+alias jqv='jq . | vim -R - -c "set ft=json"'
 
 function dinsp () {
   local dcname
