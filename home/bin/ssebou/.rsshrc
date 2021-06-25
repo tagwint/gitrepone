@@ -359,9 +359,21 @@ function dosh () {
   docker exec -ti $* -e PS1='[\u@\h \W]'$dcname'$' $dcname /bin/bash
 }
 
+function klast () {
+  # grep 'ted pub' /var/log/auth.log 
+  # ssh-keygen -lf /root/.ssh/authorized_keys | column -t 
+  join  -1 16 -2 2  <(grep -h 'ted.pub' /var/log/auth.log /var/log/auth.log.? |
+    tac |  awk '!x[$16]++'|
+    sort -k 16)  <(ssh-keygen -lf /root/.ssh/authorized_keys | sort -k 2) |
+    awk '{ print $2,$3,$4,$12,$18,$1 }' | column -t |
+    while read a b c d ;do echo $(date -d "$a $b $c" +'%Y-%m-%d %H:%M:%S') $d $e $f; done | column -t |  sort
+}
+
 
 # export -f keep_hist_there ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain
-export -f lnbdiff hdiff ddif dug dum eg haste hbin hig jget mbs pidenv ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain scolt ak_fingerprints dosh dinsp
+export -f   lnbdiff hdiff ddif dug dum eg haste hbin hig jget mbs pidenv \
+            ppub pub tit transfer vimo xx ZZ tcport fdswap scontRain scolt \
+            ak_fingerprints dosh dinsp klast
 
 # export FZF_DEFAULT_OPTS="--exact --tiebreak=begin --color=dark,hl:220,hl+:226,fg:36,bg+:240,fg+:86,pointer:0,marker:1  --bind=*:toggle,alt-j:jump-accept  -m"
 export FZF_DEFAULT_OPTS="--exact --tiebreak=begin --bind=*:toggle,alt-j:jump-accept  -m"
