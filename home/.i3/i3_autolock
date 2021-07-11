@@ -1,7 +1,9 @@
 #!/bin/sh -e
 
 # Take a screenshot
-scrot /tmp/screen_locked.png
+maim /tmp/screen_locked.png
+# scrot is discontinued, use maim instead
+# scrot /tmp/screen_locked.png
 
 # Pixellate it 10x
 mogrify -spread 11  /tmp/screen_locked.png

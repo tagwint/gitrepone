@@ -123,7 +123,9 @@ focus_follows_mouse no
 ###### vxadd: keyboard layot switch
 #http://docs.slackware.com/howtos:window_managers:keyboard_layout_in_i3
 
-##### COMMONexec --no-startup-id "~/.i3/i3keepwinlayout.py 2>&1 | ts  '[%Y-%m-%d_%H%M%S]' >>~/.i3/eng2.log"
+##### COMMON
+
+exec --no-startup-id "~/.i3/i3keepwinlayout.py 2>&1 | ts  '[%Y-%m-%d_%H%M%S]' >>~/.i3/eng2.log"
 exec --no-startup-id "~/bin/auto_keeplayout"
 exec --no-startup-id "~/bin/auto_editserver"
 exec --no-startup-id "~/bin/auto_greenclip"
@@ -218,7 +220,7 @@ set $i3sys ~/.i3/i3exit
 set $mode_system System (l) lock, (e) logout, (s) suspend, (h) hibernate, (r) reboot, (Shift+s) shutdown
 mode "$mode_system" {
     bindcode $l_code exec       --no-startup-id $i3sys  lock, mode "default"
-    bindsym F8 exec      --no-startup-id $i3sys  lock, mode "default"
+    bindsym F8 exec             --no-startup-id $i3sys  lock, mode "default"
     bindcode $e_code exec       --no-startup-id $i3sys  logout, mode "default"
     bindcode $s_code exec       --no-startup-id $i3sys  suspend, mode "default"
     bindcode $h_code exec       --no-startup-id $i3sys  hibernate, mode "default"
@@ -516,8 +518,8 @@ assign [class="xfreerdp"]                   → 8 $ws8
 for_window [class="xfreerdp"] focus
 
 assign [class=".erminator$"]                → 1 $ws1
-for_window [class=".erminator"] focus
 assign [class="zoom"]                       → 6 $ws6
+for_window [class=".erminator$"] focus
 
 assign [class="Viber.*"]                    → 9 $ws9
 for_window  [class="Viber.*"] focus
