@@ -125,7 +125,6 @@ focus_follows_mouse no
 
 ##### COMMON
 
-exec --no-startup-id "~/.i3/i3keepwinlayout.py 2>&1 | ts  '[%Y-%m-%d_%H%M%S]' >>~/.i3/eng2.log"
 exec --no-startup-id "~/bin/auto_keeplayout"
 exec --no-startup-id "~/bin/auto_editserver"
 exec --no-startup-id "~/bin/auto_greenclip"
