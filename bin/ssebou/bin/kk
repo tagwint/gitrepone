@@ -1,0 +1,41 @@
+#!/bin/bash
+
+function vxyn ()
+{
+  local lhint=${1:-'Are you sure? (y/n)'}
+  local REPLY=N
+  local lRetVAR=${2:-VXRET}
+
+  read -p "$lhint"  
+  while [ ! "$REPLY" == "y" -a ! "$REPLY" == "n" ]
+  do 
+    read -p "Enter (y/n)?"  
+  done
+  if [ "$REPLY" == "y" ] 
+  then
+    echo yes
+    return 0
+  else 
+    echo no
+    return 1
+  fi
+# 0 means yes (success), 1 - no
+} 
+
+[[ ${M_LVL:=0} -gt 0 ]] && { 
+  echo "You are nesting vifm, current M_LVL is $M_LVL"
+  echo "Consider going back to running vfm with Ctrl-D instead"
+  vxyn "Sure to continue? " || exit 1; }
+##((M_LVL++))
+export M_LVL=$((M_LVL + 1))
+# echo starting with M_LVL = $M_LVL
+
+# export MYVIFMRC=$BASH_SOURCE/vifmrc
+# NO need in inplace detection, done in advance
+# OSV=$(cat /etc/redhat-release | grep -o '[0-9\.]*' | awk -F. ' { print $1 } ')
+
+VEXE=vifm
+# [[ "${OSV:-7}" == "6" ]] && VEXE=vifm6
+
+exec $VEXE "$@"
+# --logging=/tmp/vfmlog

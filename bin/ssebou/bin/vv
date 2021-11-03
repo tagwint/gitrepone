@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Call recently edited by vim allowing to select with fzf
+# set -x
+
+vvx "$HOSTNAME | vifmhist " $@ 
+
+exit 0

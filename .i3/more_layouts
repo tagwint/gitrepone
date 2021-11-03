@@ -1,0 +1,5 @@
+#!/bin/bash
+DefCLO=$(setxkbmap -query|awk '/lay/ { print $2 }')
+NEXTLO=$(printf "ua\nde\nes\nepo\ncz\nru\nus"| rofi -i -dmenu -font "snap 33" -fg "#845454" -bg "#2e2e2e" -hlfg "#ffb964" -hlbg "#000100" -width 11 -p "Layout")
+~/.i3/toggle_layout ${NEXTLO:-$DefCLO}
+

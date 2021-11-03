@@ -1,0 +1,19 @@
+#!/bin/sh -e
+
+# Take a screenshot
+maim /tmp/screen_locked.png
+# scrot is discontinued, use maim instead
+# scrot /tmp/screen_locked.png
+
+# Pixellate it 10x
+mogrify -spread 11  /tmp/screen_locked.png
+# mogrify -scale 10% -scale 1000% /tmp/screen_locked.png
+
+# to make it possible enter unlock pass if locking occured in layout other than us
+setxkbmap us
+# Lock screen displaying this image.
+i3lock -i /tmp/screen_locked.png
+
+# Turn the screen off after a delay.
+sleep 160; pgrep i3lock && xset dpms force off
+

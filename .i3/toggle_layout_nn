@@ -1,0 +1,19 @@
+#!/bin/bash
+CLO=$(setxkbmap -query|awk '/lay/ { print $2 }')
+NLO=us
+[[ "$CLO" == "us" ]] && { NLO=ru ; BGC=\#0000aa; }
+[[ "$CLO" == "ru" ]] && { NLO=us ; BGC=\#00aaaa; }
+
+#notify-send "PPID of toggle $RANDOM" ${PPID}
+#setxkbmap $NLO
+IND=${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-\
+${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}
+
+echo ${IND^^}====${IND^^}|dzen2 -p 1  -y 250 -bg ${BGC} -fg black -fn "Sans:size=55" &
+BPID=$!
+notify-send ${NLO^^}
+sleep 0.15
+
+#~/.i3/i3_force_upd_layout
+#~/.i3/i3_force_upd_status
+kill $BPID

@@ -1,0 +1,18 @@
+#!/bin/bash
+TMPH=$(mktemp "/tmp/hk3XXXXXX")
+export H3F=${HISTKEEP3:-~/.histkeep3}
+H3BAKDIR=$(dirname $HISTKEEP3)/.bak
+mkdir -p ${H3BAKDIR}
+# remove all kills with numerical PIDs
+BKSUFF=$(date "+%Y%m%d_%H%M%S")
+sed -i.${BKSUFF} -e '/kill -.*[[:digit:]]*$/d'  $H3F
+[ -f ${H3F}.${BKSUFF} ] && mv ${H3F}.${BKSUFF} $H3BAKDIR/
+# remove duplicates w/o sorting
+cat $H3F | awk '!x[$0]++' >$TMPH 
+mv $TMPH $H3F
+
+# # remove lines marked with echo #XXX<something> and <something> -lines
+# grep -Fvxf <(sed '/^echo #XXX/!d' $H3F | sed 's/^echo #XXX//') $H3F | sed '/^echo #XXX/d' >$TMPH
+# means if you do not want some line in history, you should :
+# get it from history to command line, edit by prepending with 'echo #XXX' and enter
+# this way you tell the purifyier to remove them once purify runs again

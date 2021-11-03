@@ -1,0 +1,7 @@
+#!/bin/bash
+echo "sudo su - ;  $(command -v ush)"
+export SUSH=1
+u=${1:-root}
+# sudo --preserve-env=SUSH,HISTKEEP3,SSH_AUTH_SOCK su -P -l $u -c "bash `which ush`"
+# -P has bad side-effects like ^P 
+sudo --preserve-env=SUSH,HISTKEEP3,SSH_AUTH_SOCK su  -c "bash `which ush`"

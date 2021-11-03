@@ -1,0 +1,47 @@
+#!/bin/bash
+nfy ()
+{
+  local lM=${1:-"Empty message"}
+  echo -e $lM
+  notify-send "$(echo -e $lM)" "Notify" -t 4000
+}
+# chr() {
+#   [ "$1" -lt 256 ] || return 1
+#   printf "\\$(printf '%03o' "$1")"
+# }
+
+# ord() {
+#   LC_CTYPE=C printf '%d' "'$1"
+# }
+
+# r2e () {
+#  RES=$(sed "y|йцукенгшщзхъфывапролджэячсмитьбю.ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ.?|qwertyuiop[]asdfghjkl;'zxcvbnm,./QWERTYUIOP[]ASDFGHJKL;'ZXCVBNM<>/&|" <<<"$ARG")
+# }
+
+# e2r () {
+#  xclip -o|
+#  RES=$(sed "y|qwertyuiop[]asdfghjkl;'zxcvbnm,./QWERTYUIOP[]ASDFGHJKL;'ZXCVBNM<>/&|йцукенгшщзхъфывапролджэячсмитьбю.ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ.?|" <<<"$ARG")
+# }
+ARG=$(xclip -o)
+set -x
+cou=0
+nnn=0
+for c in $(grep -o . <<<"$ARG"); do
+ (( cou++ ))
+ n=$(printf "%d" "'$c")
+ nnn=$(( nnn + n ))
+ [[ $cou -gt 3 ]] && break
+done
+
+w=$((nnn / cou ))
+
+if [[ $w -gt 127 ]]; then
+ RES=$(sed "y|йцукенгшщзхъфывапролджэячсмитьбю.ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ.?|qwertyuiop[]asdfghjkl;'zxcvbnm,./QWERTYUIOP[]ASDFGHJKL;'ZXCVBNM<>/&|" <<<"$ARG")
+else
+ RES=$(sed "y|qwertyuiop[]asdfghjkl;'zxcvbnm,./QWERTYUIOP[]ASDFGHJKL;'ZXCVBNM<>/&|йцукенгшщзхъфывапролджэячсмитьбю.ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ.?|" <<<"$ARG")
+fi
+
+echo -n "$RES"|xclip -selection clipboard
+
+nfy "Converted:\n$ARG\nTo\n$RES"
+

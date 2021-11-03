@@ -1,0 +1,13 @@
+#/bin/bash
+
+I3STSCR=$HOME/.i3/i3statusES
+
+[ -f $I3STSCR ] || exit 0
+
+I3STPID=$(cat ${I3STSCR}.pid)
+
+#echo `date` status script pid is $I3STPID >>/tmp/deb1
+
+#eat up error to not make it cause status err,
+kill -SIGUSR1 $I3STPID || exit 0
+

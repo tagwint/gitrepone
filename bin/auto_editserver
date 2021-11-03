@@ -1,0 +1,7 @@
+#!/bin/bash 
+# a tmux session with running editserver to be created at startup
+tmux new-session -d -s EDSER
+tmux send-keys -t EDSER editserver Space 9393 C-m
+#tmux detach -s  EDSER
+
+

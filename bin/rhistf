@@ -1,0 +1,91 @@
+#!/bin/bash
+FSELLINES=/tmp/fzfRHISF_$$
+touch $FSELLINES
+
+finish () {
+ local T
+ T=${FSELLINES:-NoHarm_caused}
+ rm $T 2>/dev/null
+}
+
+trap finish  exit
+# set -x
+[[ -z "$1" ]] || HSELOPT=( -q "$*")
+
+[ -x  ${ONTO4_DRCMDHIST:-UndefINED} ] || { echo 'ONTO4_DRCMDHIST is either undefined or inaccessible ';  exit ; }
+pushd ${ONTO4_DRCMDHIST} >/dev/null
+
+VIMHISTEXT=${ONTO4_HEEXT:-vimru}
+VIMHISTMASK="*.${VIMHISTEXT}"
+
+# only grep command histories, not vim histories that are kept in .$VIMHISTEXT files
+
+# suppressing timestamps and uniquizing
+grep -H . $VIMHISTMASK | sort -t ':' -k 2,3 |
+# sed 's/.'$VIMHISTEXT':.*[ ]/.'$VIMHISTEXT': /' | sort -u |
+sed 's/.'$VIMHISTEXT':[^ ]*/.'$VIMHISTEXT': /' | sort -u |
+# column -t  |
+# leaving timestamps
+# grep -H . $VIMHISTMASK | sort -t ':' -k 2,3 | column -t |
+ fzf --header="view:f3 edit:f4" --expect="f3,f4,f5,enter" --no-sort --tac  "${HSELOPT[@]}" >"$FSELLINES"  
+ECODE=$?
+[[ $ECODE -gt 0 ]] &&  { echo Selection of remote file cancelled exit with code ["$ECODE"]; exit $ECODE ; }
+
+popd >/dev/null
+KEYPR=$(sed -n '1p' "$FSELLINES" )
+THELINE=$(sed -n '2p' "$FSELLINES")
+
+RHOST=$(awk -F:  '{ print $1 }'<<<"$THELINE"| sed "s/.$VIMHISTEXT$//" )
+echo RHO = $RHOST
+FILEARG=$(sed 's|^\(.*\)\.'$VIMHISTEXT':\([^ ]*\)\s*\(.*\)$|\3|'<<<"$THELINE")
+FARQ=$(printf "%q" "$FILEARG")
+echo FARQ=$FARQ
+
+if [ $RHOST == $HOSTNAME ]
+then 
+# For local locations:
+	VIMURL="vim $FARQ"
+	LESSURL="less -R $FARQ"
+	if [[ "$THELINE" =~ ^.*zipfile:.*::.* ]]; then 
+	  LESSURL="vim -R $FARQ"
+        fi
+	if [[ "$LESSURL" =~ ^less.*scp://.* ]] 
+        then 
+          LESSURL=$VIMURL
+          SCPHOST=$(echo $LESSURL|sed 's,^.*scp://,,;s,//.*$,,')
+          timeout 3 ssh -q $SCPHOST 'date' || { >&2 echo "Could not connect to [$SCPHOST]" ; exit 2; } 
+        fi
+	GOURL=$VIMURL
+else 
+# For remote locations:
+        timeout 3 ssh -q $RHOST 'date' || { >&2 echo "Could not connect to [$RHOST]" ; exit 2; } 
+	# VIMURL="vim $(sed -n '2p' "$FSELLINES" | sed 's|^\(.*\)\.'$VIMHISTEXT':\(.* \)\(.*\)$|scp://\1//\3|')"
+	VIMURL="fjk $RHOST ic 'vim $FARQ'"
+	LESSURL="fjk $RHOST ic 'less -R $FARQ'"
+	GOURL="fjk $RHOST ic 'kk \$(dirname $FARQ)'"
+
+	if [[ "$THELINE" =~ ^.*zipfile:.*::.* ]]; then 
+          # handling zipfile: entries specially - by going to remote shell and open with vim there
+          ZFONLY=${FARQ/zipfile:/} # extracting just the archive file name
+	  GOURL="fjk $RHOST ic 'kk \$(dirname ${ZFONLY%%::*})'"
+	  LESSURL="fjk $RHOST ic 'vim -R $FARQ'"
+	elif [[ "$THELINE" =~ ^.*war$|^.*jar$|^.*zip$ ]]; then 
+	  LESSUR="fjk $RHOST ic 'vim -R $FARQ'"
+	else 
+	  :
+	fi
+
+fi
+echo VIMURL. = $VIMURL
+echo GOURL.. = $GOURL
+echo LESSURL = $LESSURL 
+
+case $KEYPR in
+    f4) eval $VIMURL
+           ;;
+    f3|enter) eval $LESSURL
+           ;;
+    f5) eval $GOURL
+           ;;
+esac
+

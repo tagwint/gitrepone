@@ -1,0 +1,30 @@
+#!/bin/bash
+
+upd () {
+    local SIG=${1}
+    LG=$(setxkbmap -query | awk '/layout/{print $2}') 
+    MVOL=$(amixer get Master| grep %| sed 's/^.*\[\([0-9]*%\).*$/\1/;1q')
+    LAVG=$(uptime | sed 's/.*rage: \(.*\)/\1/;s/, / /g')
+    echo "${SIG}${LG^^} ☮ $LAVG ● $(date) ♪$MVOL" || exit 1
+}
+
+trap 'upd' SIGUSR1
+
+# shell scipt to prepend i3status with more stuff
+while :
+do
+	sleep 1
+	upd
+done
+
+exit
+# below is original bar
+##line=$(i3status --config ~/.i3/i3mystatus.conf)
+##echo $line
+##exit
+##do
+##        read line
+##	echo $line
+###        LG=$(setxkbmap -query | awk '/layout/{print $2}') 
+###        echo "${LG^^} | $line" || exit 1
+##done

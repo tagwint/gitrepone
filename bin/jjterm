@@ -1,0 +1,23 @@
+#!/bin/bash
+#set -x
+## commnetedout since xrandr tells 2 lines when 2 monitor are connected
+## Xaxis=$(xrandr --current | grep '\*' | uniq | awk '{print $1}' | cut -d 'x' -f1)
+## Yaxis=$(xrandr --current | grep '\*' | uniq | awk '{print $1}' | cut -d 'x' -f2)
+## # sizes in pixels for roxterm
+## GXP=$(( Xaxis * 3 / 4 ))
+## GYP=$(( Yaxis * 3 / 5 ))
+## # sizes in symbols for others
+GXS=$(( $(tput cols) * 12 / 15 ))
+GYS=$(( $(tput lines) * 12 / 15 ))
+
+GEOP="--geometry=${GXP}x${GYP}"
+GEOS="--geometry=${GXS}x${GYS}"
+export TRM="xfce4-terminal $GEOS --command="
+# TRM="tilix $GEOS --title=FLLOAT --profile=Molo --command="
+# TRM="tilix $GEOS --title=FLLOAT --profile=Molo -e "
+#TRM="lxterminal $GEOS --command="
+#TRM="roxterm $GEOP -e "
+LOG=/tmp/jjterm.log
+echo "$(date) PID:$$" >>$LOG
+${TRM}"$@" >>$LOG 2>&1 &
+

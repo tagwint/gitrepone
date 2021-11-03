@@ -1,0 +1,982 @@
+#!/bin/bash
+#Fuzzy select of remote file/dir
+#set -x
+#_RCONN=${1?"No remote [user@]host specified (1st)"}
+
+# Ubuntu            Debian  
+# 20.04  focal      bullseye/ sid   - 11
+# 19.10  eoan       buster  / sid   - 10
+# 19.04  disco      buster  / sid
+# 18.10  cosmic     buster  / sid
+# 18.04  bionic     buster  / sid
+# 17.10  artful     stretch / sid   - 9
+# 17.04  zesty      stretch / sid
+# 16.10  yakkety    stretch / sid
+# 16.04  xenial     stretch / sid
+# 15.10  wily       jessie  / sid   - 8
+# 15.04  vivid      jessie  / sid
+# 14.10  utopic     jessie  / sid
+# 14.04  trusty     jessie  / sid
+# 13.10  saucy      wheezy  / sid   - 7
+# 13.04  raring     wheezy  / sid
+# 12.10  quantal    wheezy  / sid
+# 12.04  precise    wheezy  / sid
+# 11.10  oneiric    wheezy  / sid
+# 11.04  natty      squeeze / sid   - 6
+# 10.10  maverick   squeeze / sid
+# 10.04  lucid      squeeze / sid
+
+function vxyn ()
+{
+  local lhint=${1:-'Are you sure? (y/n)'}
+  local REPLY=N
+  local lRetVAR=${2:-VXRET}
+
+  read -p "$lhint"  
+  while [ ! "$REPLY" == "y" -a ! "$REPLY" == "n" ]
+  do 
+    read -p "Enter (y/n)?"  
+  done
+  if [ "$REPLY" == "y" ] 
+  then
+    echo yes
+    return 0
+  else 
+    echo no
+    return 1
+  fi
+# 0 means yes (success), 1 - no
+} 
+ 
+SeedIt () {
+  local rov vbin vbinbase
+  
+  echo  Preparing remote environment ... 
+  [ -d "$LBIN" ] && BINADDON="-C $(dirname $LBIN) $BINBASE"
+  ## echo REMOSVER is ${REMOSVER:-Undef}; read
+  ## if there is version specific bins, add it 
+  rov=${REMOSVER:-undef}
+  vbin=${LBIN}$rov
+  vbinbase=$(basename $vbin)
+  [ -d ${vbin} ] && BINADDON="$BINADDON -C $(dirname $vbin) ${vbinbase} "
+  # this way we collect all the items by visiting their dirs and grabbing the base
+  # then, on remote they are placed under the session remote dir each with its original basename
+  time \
+  tar zc -C $(dirname $SSHVIMRP)   $(basename $SSHVIMRP) \
+         -C $(dirname $LDOTMES)    $(basename $LDOTMES)  \
+         -C $(dirname $LAGGSHRC)   $(basename $LAGGSHRC) \
+         -C $(dirname $LSHELL_AUXRC) $(basename $LSHELL_AUXRC) $BINADDON   | pv -s 7431110|
+  ssh  $RCONN "mkdir -p $REMOTE_SESSION_RCDIR ; tar  zxf  - -C $REMOTE_SESSION_RCDIR " 
+  # TODO: --skip-old-files option of tar is of little use, it does not speedup things
+  # think about rsync option for every 2+ session
+  echo . done
+}
+
+
+dpf () {
+    local -r FN=${1:?"No file to printout specified"}
+    [[ -r "$FN" ]] || { echo "File to printout does not exist or cannot be read [$FN]"; return 1; }
+    echo -- BEGIN debug printout of file "$FN"
+    cat "$FN"
+    echo -- __END debug printout of file "$FN" 
+}
+     
+xaste () 
+{ 
+    local -r f=$(t0b)
+    cat - > "$f";
+    local -r URL=${1:-$HBLOGNET};
+    local -r u=$(curl -s  --data-binary "@$f" "$URL/documents" | awk -v HB="$URL" -F '"' '{print $4}');
+    echo "${URL}/${u}"
+}
+     
+handle_action () {
+    local -r ACT=${1:-none}
+    local -r RCO=${2?"No remote connection string for handling action specified"}
+    local -r FSR=${3?"No file with result of selection specified to handle"}
+    local -r RDIR=${4?"No remote dir specified to handle"}
+    local  f
+    local -r CNT=$(wc -l "$FSR")
+    case ${ACT:-none} in
+	none)
+	if [[ "$CNT" -eq 1 ]]; then
+	    echo Single choice made
+	    local -r SI=$(cat "$FSR")
+	    echo _Selected Item was:  "$SI" 
+	    echo TO EDIT SUDO EMACS:  ec \"/ssh:${RCONN}$'|sudo:'${RHOST}:${SI}\"
+	    echo __TO EDIT IN EMACS:  "ec /ssh:${RCONN}:${SI}"
+	    echo ___TO CAT TO HASTE:  "ssh ${RCONN} cat ${SI} $'| haste'"
+	    echo _______TO DOWNLOAD:  "rsync -aP ${RCONN}:${SI} ./"
+	else
+	    echo Multiple choice made
+    	    echo Selected Items :
+	    cat "$FSR" 
+	fi
+	;;
+	grab)
+            #set -x
+	    local -r GRABFN="${RCO}_${RDIR//\//_}_$(date "+%Y%m%d_%H%M%S").zip"
+	    local -r RZIPF="/tmp/${GRABFN}"
+	    local -r LZIPF="${GRABDIR}/${GRABFN}"
+	    local -r RCMD="cd $RDIR && zip  $RZIPF -@"
+	    cat "$FSR" | sed "s/^.*${FZFDLM}//g" | ssh -q "${RCO}" "$RCMD" && scp "${RCO}:$RZIPF" "${LZIPF}" && ssh -q "${RCO}" "rm ${RZIPF:-NoDisAsster}"
+	    echo "Grabbed to --> ${LZIPF}"
+	    zip -z "${LZIPF}" <<<"USED FZF QUERY:${FZFQUERY}"
+	;;
+	erase)
+	    local -r GRABFN="${RCO}_${RDIR//\//_}_ERASED_$(date "+%Y%m%d_%H%M%S").zip"
+	    local -r RZIPF="/tmp/${GRABFN}"
+	    local -r LZIPF="${GRABDIR}/${GRABFN}"
+	    local -r RCMD="cd $RDIR && zip -rm  $RZIPF -@"
+	    cat "$FSR" | sed "s/^.*${FZFDLM}//g" | ssh -q "${RCO}" "$RCMD" && scp "${RCO}:$RZIPF" "${LZIPF}" && ssh -q "${RCO}" "rm ${RZIPF}"
+	    echo "Erased and grabbed to --> ${LZIPF}"
+	    zip -z "${LZIPF}" <<<"USED FZF QUERY:${FZFQUERY}"
+	;;
+	grepmarked)
+            #${TRM} "$myself ${RCO} ${RDIR} @${FSR}" 	    
+            local -r PATFILE=/tmp/${TMPFX}.greppattern
+            echo -n Enter regexp to grep within selected files | rofi -i -dmenu -font "snap 33" -width 61 -p ":">$PATFILE
+	    echo will grep for:
+            cat  $PATFILE
+            [ -s $PATFILE ] || return
+            $myself ${RCO} ${RDIR} @${FSR} @${PATFILE}
+	;;
+	haste)
+	    cat "$FSR" | while read f
+	    do 
+		echo -n "Hastebin page for ["$f"] --> "
+		< /dev/null  ssh -q "${RCO}" "cat $f" | xaste 
+	    done
+	;;
+	esac
+    }
+
+trimmeta () {
+    local -r FIN=$1
+    local -r FOU=$2
+    cat $FIN | sed "s/^.*${FZFDLM}//g"  > $FOU
+}
+
+hbin_them () {
+  local -r FIN="$1"
+  local -r FTMP=$(t0b)
+  local -r FTMP2=$(t0b)
+  local -r FOUT=$(t0b)
+  # trim meta info on the left, all cols till delimiter
+  trimmeta $FIN $FTMP
+  cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
+  #${TRM} "less ${FTMP2}"
+  echo Hasting files ...
+  handle_action "haste" "$RCONN" "$FTMP2" "$RDIR" > ${FOUT}
+  ${TRM} "less ${FOUT}"
+}
+
+
+xxxedit_emacs () {
+  local -r RDIR="$1"
+  local -r ARG1="$2"
+  local -r BUFF1=$(t0b)
+  local -r BUFF2=$(t0b)
+  echo RDIR is ["$RDIR"]
+  echo ARG1 is ["$ARG1"]
+  local -r RABSP=$(printf "${RDIR}/%s\n" $ARG1 | sed 's,/\./,/,')
+  ec "/ssh:$RCONN:$RABSP"
+}
+
+edit_vim () {
+  local -r FIN="$1"
+  local -r FTMP=$(t0b)
+  local -r FTMP2=$(t0b)
+  local -r FOUT=$(t0b)
+  local RABSP
+  local VID
+  local LTERM
+  # trim meta info on the left, all cols till delimiter
+  trimmeta $FIN $FTMP
+  cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
+  #${TRM} "less ${FTMP2}"
+  echo Viewing files ...
+  VID=0
+  LTERM=$TRM
+  [ "$TMUX" ] && LTERM=$TTERM
+  cat $FTMP2 | while read RABSP
+  do
+      (( VID++ ))
+      export FPANETIT="scp://$RCONN//$RABSP"
+      export FWINDTIT="E${VID}:$(basename $RABSP)"
+      ${LTERM}  " vimx \"scp://$RCONN//$RABSP\" -c 'set title' "
+  done
+}
+
+edit_emacs () {
+  local -r FIN="$1"
+  local -r FTMP=$(t0b)
+  local -r FTMP2=$(t0b)
+  local -r FOUT=$(t0b)
+  local RABSP
+  # trim meta info on the left, all cols till delimiter
+  trimmeta $FIN $FTMP
+  cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
+  #${TRM} "less ${FTMP2}"
+  echo Viewing files ...
+  cat $FTMP2 | while read RABSP
+  do
+      ec "/ssh:$RCONN:$RABSP"
+  done
+}
+
+# printf '\u001b[40m A \u001b[41m B \u001b[42m C \u001b[43m D \u001b[0m  VVVVV \n'
+remote_preview () {
+  local FFN RURL
+  FFN="${RDIR}$(echo $* | awk -F"$FZFDLM" '{ print $NF }' | sed 's/[^/]*//' )"
+  RURL="${RCONN}:/$FFN"
+  # echo Preview args: $*
+  echo RSYNCable path: $RURL
+  # echo RCONN is : $RCONN
+  # echo RDIR is : $RDIR
+  echo FFN is : $FFN
+  # ssh -q $RCONN  "export MIME=\$(file -ib $FFN) ; case \$MIME  in
+  ssh -q $RCONN  "export MIME=\$(file -ib \"$FFN\") ; case \$MIME  in
+	text*|application/xml*)
+          NOL=\$(cat \"$FFN\"|wc -l); echo Lines: \$NOL 
+	if [[ "${FFN// /_}" =~ ^.*\.log$|^.*/.*log\..*$|^.*/log/.*$|^.*/logs/.*$ ]] ;then
+	    ( ( tail -n 4 \"$FFN\" | tac ) ; echo --------------- \<\< TAIL reversed, ERRORs in reverse order below:; ( cat -n \"$FFN\" | egrep 'ERROR' | tac ) ;echo  .. skipped in preview  ........; echo ----------- HEAD \>\> ;  head -n 4 \"$FFN\" ) 
+          else
+            if [[ \$NOL -lt 800 ]] ; then 
+              cat \"$FFN\"
+            else
+	      ( ( head -n 20 \"$FFN\" | tac ) ; echo --------------- \<\< HEAD  .. skipped in preview  ........ Tail \>\> ;  tail -n 14 \"$FFN\" ) 
+            fi 
+          fi 
+	;;
+	application/zip*)
+           unzip -l \"${FFN}\" | head -n 8  ;echo ...
+	;;
+        inode/x-empty*)
+           echo EMPTY FILE
+	;;
+	*) 
+          echo mime is \$MIME , do not really know how to preview, using hexdump
+	  ( hexdump -C \"${FFN}\"| head -n 5 ; echo \<\< Head ) 
+	;;
+	esac
+  "
+}
+
+view_less () {
+
+  local -r FIN="$1"
+  local -r FTMP=$(t0b)
+  local -r FTMP2=$(t0b)
+  local -r FOUT=$(t0b)
+  local RABSP
+  local VID
+  local LTERM
+  # trim meta info on the left, all cols till delimiter
+  trimmeta $FIN $FTMP
+  cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g" > $FTMP2
+  # ${TRM} "less ${FTMP2}"
+  echo Viewing files ...
+  VID=0
+  LTERM=$TRM
+  [ "$TMUX" ] && LTERM=$TTERM
+  cat $FTMP2   |  while read RABSP
+  do
+      (( VID++ ))
+      export FPANETIT="scp://$RCONN//$RABSP"
+      export FWINDTIT="V${VID}:$(basename $RABSP)"
+      export QRFN=$(printf "%q" "$RABSP")
+      # TODO: in TMUX, if file path specified wrongly, it does not stop showing errror
+      # wrongly specify is only possible when 1st parameter to the $0 is not an existing path but something relative but matching due to ignore of sequential slashes
+      
+      FULLCMD=$(printf "%q" "bash --rcfile <( cat ${RAGGSHRC} ;
+               echo less -RMJS \"$QRFN\" ; echo 'if [ \$? -gt 0 ] ; then echo SEE ERROR ABOVE. Press enter. ; read; fi; '
+               echo exit )" )
+      # FULLCMD="bash --rcfile <( cat ~/.bashrc $REMOTE_SESSION_RCDIR/$(basename $RSHELL_RC_INC_EXPAND) $REMOTE_SESSION_RCDIR/$(basename $RSHELL_RC_INC_NOEXPAND); 
+      #          echo less -RMJS $RABSP ; echo 'if [ \$? -gt 0 ] ; then echo SEE ERROR ABOVE. Press enter. ; read; fi; '
+      #          echo exit )"
+      # ${LTERM}  "ssh -q -tt $RCONN \" $FULLCMD \" "
+      ${LTERM}  ssh -q -tt $RCONN "eval $FULLCMD " 
+  done
+}
+## echo \"if [ \$? -gt 0 ] ; then echo SEE ERROR ABOVE. Press enter. ; read; fi; \"
+sel2clipboard () {
+  local -r FIN="$1"
+  local -r FMT="${2:-0}"
+  # valid formats:
+  # 0 - just full path 
+  # 1 - {scp,rsync}-able (username@hostname:<fullpath>)
+  # 2 - {vim-scp}-able (scp://username@hostname//<fullpath>)
+  local -r FTMP=$(t0b)
+  local -r FTMP2=$(t0b)
+  # # trim meta info on the left, all cols till delimiter
+  trimmeta $FIN $FTMP
+
+  cat $FTMP | sed "s,^./\(.*\)$,${RDIR}\1,g"  > $FTMP2
+  cat $FTMP2 | sed "s,^,${RCONN}:," |xsel -b -i  
+
+  case $FMT in
+      0) cat $FTMP2 | xsel -b -i 
+	   ;;
+      1) cat $FTMP2 | sed "s,^,${RCONN}:," |xsel -b -i  
+	   ;;
+      2) cat $FTMP2 | sed "s,^,scp://${RCONN}/," |xsel -b -i  
+	   ;;
+  esac
+}
+
+
+stat_them () {
+  local -r FIN="$1"
+  local -r FTMP=$(t0b)
+  local -r FTMP2=$(t0b)
+  local -r FOUT=$(t0b)
+  local RABSP
+  local LTERM
+  # trim meta info on the left, all cols till delimiter
+  trimmeta $FIN $FTMP
+  cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
+  #${TRM} "less ${FTMP2}"
+  echo Stating files ...
+  cat $FTMP2 | while read RABSP
+  do
+      < /dev/null ssh -q $RCONN "md5sum $RABSP && echo '========================' ;  ls -lha $RABSP --time-style=+'%Y%m%d_%H%M' &&  echo ======================== ;  stat $RABSP " >> ${FOUT}
+  done
+  
+  # ${TRM} "less ${FOUT}"
+
+  LTERM=$TRM
+  [ "$TMUX" ] && LTERM=$TTERM
+  ${LTERM} "less ${FOUT}"
+}
+
+
+grab_them () {
+  #set -x
+  echo Grabbing selected ...
+  local -r FIN="$1"
+  local -r FTMP=$(t0b)
+  local -r FTMP2=$(t0b)
+  local -r FOUT=$(t0b)
+  local LTERM
+  # trim meta info on the left, all cols till delimiter
+  trimmeta $FIN $FTMP
+  #cat $FTMP | sed "s,^.\(.*\)$,${RDIR}\1,g"  > $FTMP2
+  #${TRM} "less ${FTMP2}"
+  echo Grabbing files ...
+  # Sensible filename for zip file
+  local -r GRABFN="${RCONN}_${RDIR//\//_}_$(date "+%Y%m%d_%H%M%S").zip"
+  local -r RZIPF="/tmp/${GRABFN}"
+  local -r LZIPF="${GRABDIR}/${GRABFN}"
+  local -r RCMD="cd $RDIR && zip  $RZIPF -@"
+  # list is feed to the zip on remote host 
+  cat "$FTMP" |  ssh -q ${RCONN} "$RCMD" && scp "${RCONN}:$RZIPF" $LZIPF
+  zip -z "${LZIPF}" <<<"USED FZF QUERY:${FZFQUERY}"
+  echo "Grabbed to --> ${LZIPF}" >$FOUT
+  echo "===================================" >>$FOUT
+  unzip -l ${LZIPF} >>$FOUT
+
+  LTERM=$TRM
+  [ "$TMUX" ] && LTERM=$TTERM
+  ${LTERM} "less ${FOUT}"
+}
+
+act_menu () {
+  local -r sfun=$(echo -e "view_less\ngrab_them\nstat_them\nhbin_them\nedit_emacs" | rofi -dmenu -p 'Action:' -i -font "snap 33"  -width 25)
+  ${sfun} "$@"
+}
+
+
+PrepIncs () {
+  local nrm inv dim
+  RF=${RDIR%/}/
+  echo Getting to $RCONN , RDIR is ${RDIR:-notset}, target dir is  $RF ... 
+  RCMD0="$RSHEV ; [ -r $RSHELL_AUXRC ] && . $RSHELL_AUXRC ; [ -x ${RF:-n.on_e} ] && cd ${RF}; "
+
+  export RSHELL_RC_INC_EXPAND=$(t0b).xpnd1
+  export RSHELL_RC_INC_NOEXPAND=$(t0b).noxpnd2
+  cat <<EORSHELL_RC_INC_EXPAND >>$RSHELL_RC_INC_EXPAND
+# vim: ft=sh
+  echo \$\$>>"${SIBLING_SHELL_COUNTER}"
+  export ONTO4_HDIFFCON=root@localhost
+  export ONTO4_HDIFFPORT=2323
+  export ONTO4_HDIFFHOST=${CORPDIFF7}
+  export ONTO4_RHASTEURL="http://hb7.maxbill.com"
+  export IGNOREEOF=2
+  export INCC="\$(date)"
+  export MYVIFMRC=$REMOTE_SESSION_RCDIR/${RDOTMEBASE}/vifmrc
+  if [ ! -f "$REMOTE_SESSION_RCDIR/${BINBASE}/ush" ] ;then
+    echo '/bin/bash --rcfile <( cat ' $RAGGSHRC '; echo cd "\$@" )' >$REMOTE_SESSION_RCDIR/${BINBASE}/ush
+    chmod 0755 $REMOTE_SESSION_RCDIR/${BINBASE}/ush
+  fi
+  if [ ! -z "\${PATH##*$REMOTE_SESSION_RCDIR/${BINBASE}*}" ] ;then
+    # extend PATH with session bin
+    export PATH=$REMOTE_SESSION_RCDIR/${BINBASE}:\$PATH
+    # export PATH_A=$REMOTE_SESSION_RCDIR/${BINBASE}
+    # if there's more specific bins, add them to path front
+    [ -d "$REMOTE_SESSION_RCDIR/${BINBASE}${REMOSVER}" ] && export PATH=$REMOTE_SESSION_RCDIR/${BINBASE}${REMOSVER}:\$PATH
+  fi
+  rmc() { local sespid="\$\$" 
+    history -a
+    grep -qw \$\$ $SIBLING_SHELL_COUNTER && sed -i "/^\${sespid}$/d" $SIBLING_SHELL_COUNTER 
+    # checking for stale pids
+    for s in \$(cat $SIBLING_SHELL_COUNTER) ; do
+      kill -0 \$s 2>/dev/null || sed -i "/^\${s}$/d" $SIBLING_SHELL_COUNTER
+    done 
+    return \$(wc -l <$SIBLING_SHELL_COUNTER) 
+  } 
+  trp() { rmc &&  [[ -d ${REMOTE_SESSION_RCDIR:-.N3vaRegzZ} ]] && { 
+    h3sq # deduplicate command history entries
+    rm -f  ${SIBLING_SHELL_COUNTER:-prevent_accidental_deletion}
+    rm -rf ${REMOTE_SESSION_RCDIR:-prevent_accidental_deletion} 
+    }   
+  } 
+  trap trp INT TERM EXIT HUP
+  $RCMD0  
+EORSHELL_RC_INC_EXPAND
+  # TODO: if signal list in trap is redundatn?
+
+# if *any part of* delimiter is quoted, no expansion inside!
+# quoted means any of single ,double, backslashed: 'EOR' "EOR" \EOR or even E\O\R
+cat <<\EORSHELL_RC_INC2 >$RSHELL_RC_INC_NOEXPAND
+export HNAME=$(hostname -s)
+export IPLASTTETRADE=$(hostname -I|awk -F. "{ print \$NF }")
+KKNEST=
+
+if [[ "$(id -u)" == "0" ]]; then
+  _un=$(id -un)
+  _cl=208
+  __user=''
+  for i in $(seq 1 ${#_un}); do
+    _U=${_un:i-1:1}
+    __user=${__user}'\[\033[01;38;5;'${_cl}'m\]'${_U^^}
+    _cl=$(( _cl - 4 ))
+  done
+else
+     __user="\[\e[01;38;2;1;200;1m\]\u"
+fi 
+
+nest="\e[01;38;2;210;10;63m"
+inv=$(echo -e "\e[7m")
+dim=$(echo -e "\e[2m")
+nrm=$(echo -e "\e[0m")
+#\e[5m  -blink
+#
+unset KKNEST
+for i in `seq ${M_LVL:-0}`; do KKNEST="${KKNEST}·" ; done
+## PS1 flaw: always shows $ at the prompt end, even for root, because of \$ is interpredted hard way
+export PS1="\[${nest}\]\[${inv}\]${KKNEST}\[$nrm\]${__user}\[$(tput sgr0)\]\[\033[38;5;15m\]@\[$(tput sgr0)\]\[\033[38;5;11m\]${HNAME,,}\[$(tput sgr0)\]\[\033[38;5;15m\]:${IPLASTTETRADE}\[$(tput sgr0)\]\[\033[38;5;6m\]\[$(tput sgr0)\]\[\033[38;5;186m\][\w\[$(tput sgr0)\]\[\033[38;5;6m\]]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"
+export EDITOR=vim
+EORSHELL_RC_INC2
+#Now compoisng final rc file for remote shell
+cat > $LAGGSHRC \
+    <(echo '# $LCOPYOFBASHPROFILE     PART: ==== ') $LCOPYOFBASHPROFILE     \
+    <(echo '# $RSHELL_RC_INC_EXPAND   PART: ==== ') $RSHELL_RC_INC_EXPAND   \
+    <(echo '# $RSHELL_RC_INC_NOEXPAND PART: ==== ') $RSHELL_RC_INC_NOEXPAND \
+    
+# DEBUG
+cat $LAGGSHRC > /tmp/${TMPFX}_000debug_laggshrc_for_${RCONN}
+}
+
+
+callIshell () {
+  # expected: RDIR defined globally, 1st param is relative to RDIR with an optional '->' delimiter in front
+  # that is removed
+  # everything further than $1 to be interpreded as a command to be started after shell login
+  local -r RF=${RDIR%/}/$(echo "$1" | sed  "s/^.*${FZFDLM}//g;s,^./,,g")
+  local -r RD=$(dirname "$RF")
+  local LTERM RCMD1 RCMD0 RCMD2 FULLCMD ETRP
+  local FULLCMD
+  if [[ -n "$2" ]]; then
+    shift
+    RCMD0="$@"
+    RCMD1=exit
+  else 
+    # RCMD0='echo Hello'
+    RCMD0='w ; date ; hostname -f '
+    RCMD1=':'
+  fi
+  LTERM=$TRM
+  echo Getting to $RCONN ..., Target dir is RD=${RD:-none} 
+
+  FULLCMD="bash --rcfile <( cat ${RAGGSHRC} ; echo cd $RD ; echo \"$RCMD0\"; echo $RCMD1 )"
+  # FULLCMD="cat ${RAGGSHRC}>${RAGGSHRC}.p ; echo cd $RD>>${RAGGSHRC}.p; echo \"$RCMD0\">>${RAGGSHRC}.p; echo $RCMD1>>${RAGGSHRC}.p; bash --rcfile ${RAGGSHRC}.p"
+  [[  "${INTERACTIVE:-0}" == "1" ]] && { ssh -q -tt $RCONN "$FULLCMD" ; return ; }
+
+  [ $TMUX ] && LTERM=$TTERM
+  ${LTERM} "ssh -q -tt $RCONN \"$FULLCMD\""
+  # # ssh -q -tt $RCONN "$FULLCMD"
+
+}
+
+
+t0b () {
+    # returns filename of a dynamically created tmp file
+    # 
+    echo $(mktemp "/tmp/${TMPFX}.XXXXXX")
+}
+
+callvifm () {
+  local -r RF=${RDIR%/}/$(echo "$1" | sed  "s/^.*${FZFDLM}//g;s,^./,,g")
+  local -r MEANINGNAME=$(echo "${RCONN}:$(dirname ${RF})/"  | tr "/@:" "___")
+  local -r TMPSSHF=$(mktemp "/tmp/${TMPFX}.XXX.${MEANINGNAME}.ssh")
+  local LTERM
+  echo "${RCONN}:$(dirname ${RF})/">$TMPSSHF
+  LTERM=$TRM
+  [ "$TMUX" ] && LTERM=$TTERM
+  ${LTERM} "vfm $TMPSSHF"
+}
+
+squeeze () {
+    local TMPH INPF
+    INPF=$1
+    [[ -r $INPF ]] || return
+    TMPH=$(mktemp "/tmp/sq3XXXXXX")
+    cat $INPF | awk '!x[$0]++' >$TMPH 
+    mv $TMPH $INPF
+}
+
+finish () {
+    local STMP SAVERCH SAVEVIH RVIMHIST DEFREMOTEVIMHISTEXT
+    DEFREMOTEVIMHISTEXT=vimru # default extention for files to keep file edit history, those files will be grabbed on session exit
+    # local mirror files may have some other extention if set in ONTO4_HEEXT
+    # if not set, then the same extention is used
+    [[ -n "${GUARDPID}" ]] && { 
+      SAVERCH=${ONTO4_DRCMDHIST:-/tmp}/${RCONN}.chist # where to save cmd history got from remote locally 
+      SAVEVIH=${ONTO4_DRCMDHIST:-/tmp}/${RCONN}.${ONTO4_HEEXT:-${DEFREMOTEVIMHISTEXT}} # where to save vim mru history got from remote locally 
+      RVIMHIST=${RHK3:-oops}.${DEFREMOTEVIMHISTEXT}
+      RCMDHIST=${RHK3:-oops}
+      echo "Saving command history from ${RCMDHIST} to $SAVERCH .."
+      ssh -q $RCONN "cat ${RCMDHIST}  | sed 's/^#_# //;s/\s*$//' | sort -u | gzip " | gzip -d >>$SAVERCH && squeeze $SAVERCH
+      echo "Saving file edit history from ${RVIMHIST} to ${SAVEVIH} .."
+      ssh -q $RCONN "cat ${RVIMHIST} | gzip " | gzip -d >>${SAVEVIH} && squeeze $SAVEVIH
+      echo -n "Taking off the guard $GUARDPID ...";  kill -TERM ${GUARDPID}
+    }
+    # echo - n PID of self is $$
+    echo -n Wiping out temp files ...
+    STMP="${SELF_TMP_DIR:=prevent_accidental_deletion}"
+    [[ -x "$STMP" ]] &&  rm -rf "$STMP" 
+    rm /tmp/${TMPFX:-prevent_accidental_deletion}* 
+    echo done.
+}
+
+## ENTRY POINT HERE ==============================================================
+# ================================================================================
+
+_RCONN=${1}
+
+myself=$0
+thisbn=$(basename "$0")
+thisdir=$(dirname "$0")
+thispid=$$
+export TMPFX=${thisbn}_${thispid}
+
+export RUSER=
+if [[ ! -z ${_RCONN} ]] 
+then 
+  # if 1st param specified try to interpret it a [user@]hostname
+  export _RHOST=$(sed 's/^.*@//g'<<<"$_RCONN")
+  echo "${_RCONN}" | grep -q '@' && { 
+     export _RUSER=$(sed 's/@.*$//g'<<<"$_RCONN")
+     [[ ! -z ${_RUSER} ]] && export RUSER="${_RUSER}@"
+  }
+  # prepare fzf query option for matching,
+  # it may be required if hostname is just a part of the host name along known hosts
+  # it may be not required if hostname is a name of a valid host just unknown yet for us
+  export HSELOPT="-1 -q $_RHOST"
+else 
+  : # 1st param is empty
+  export HSELOPT=
+fi 
+
+
+#file to keep known host list, as it'll be used more than once
+KHF=$(t0b)
+
+
+grep -v '^\s*#.*$' ~/.ssh/known_hosts  |
+ awk ' { print $1 } '  | 
+ sed 's/:[0-9]*//g;s/\[//g;s/\]//g;s/,/\n/g;s/^$//g' | 
+ sort -u > "${KHF}"
+
+# host may be also known by name specified in ssh config
+# when it differs from ssh real host name, it does not get
+# into known_host file, so add those to valid list like this
+grep -i '^Host\s*' ~/.ssh/config |
+  sed 's/^Host[[:space:]]*//'  |
+  sed 's/[[:space:]]/\n/g'     |
+  grep -v '^[[:space:]]*$'     |
+  grep -v '\*' >>$KHF
+# << this scary pipe extracts all hosts from ssh config 
+# and adds them to the list of known hosts
+
+# if host  name is a full name, known to knownwhost, accept it and skip fzfing
+# otherwise use fzf for selection
+# also using non-existant default in case _RHOST still empty to force grep not match it
+
+KHN=$(grep -i "${_RHOST:-EMPTYHOSTNAME}" "$KHF" | wc -l)
+   # echo $KHN
+if grep -w -q  "^${_RHOST:-EMPTYHOSTNAME}$" "$KHF"
+then 
+  export RHOST=${_RHOST}
+else
+  [ $KHN -lt 1 ] && { echo "$_RHOST looks like not yet known host, please do a normal ssh to it first"; exit 1; }
+  export RHOST=$(fzf ${HSELOPT,,} --prompt="Enter user@host->" <"$KHF")
+fi 
+ECODE=$?
+
+[[  -z ${RHOST} ]] &&  { echo Selection of host not completed ; exit $ECODE ; }
+[[ $ECODE -gt 0 ]] &&  { echo Selection of host cancelled; exit $ECODE ; }
+##echo $ECODE -------------------
+
+# Remote ssh connection string used globally in subshell and  exported functions
+export RCONN=${RUSER}$RHOST
+
+
+# local folder to keep downloads
+export GRABDIR=${VX_DLSINK:-${HOME}/000dlsink}
+# field delimiter in fzf output
+export FZFDLM='->'
+
+[[ -x "${GRABDIR}" ]] || mkdir -p ${GRABDIR}
+
+
+export SELF_TMP_DIR=$(mktemp -d "/tmp/d_${TMPFX}.XXXXXX")
+# Items to deliver to remote:
+# bash rcfile, composed dynamically and addressing hardcoded-paths specific for this session
+# session is shared by all calls from this machine, last connection cleans up on exit
+# bins to be taken with, like ripgrep etc.
+# Thus we need 1st to gather all that into one local dir, tar and seed it to remote name it say A=/var/tmp/XXRC.session1
+# 
+# Pass A as a parameter to 1st Guard, then for every shell of this session,
+
+### current value here is :  SSHVIMRP=/home/viktorkh/.sshrc.d/.vim
+# SSHVIMRP is the path to (an additional) Vim runtimepath
+# it supposed to be added to the existing, if the latter exist, and that must exist - default or whatever set on top
+# our SSHVIMR goes toppest
+
+SSHVIMRP=${ONTO4_DVIMRP:-~/.vim}
+export LINCVIMINT_SRC=$SSHVIMRP/vimrc.inc
+# that inc above uses SSHVIMRP variable inside so the name SSHVIMRP is kind of reserved, you'd better stick with it
+
+# an include rc file to be added(sourced) to the finally composed --rcfile of the remote bash session
+
+export LSHELL_AUXRC=${ONTO4_DSSEBOU}/.rsshrc
+export _TSTMP=$(date +"%g%m%d%H%M%S")
+# reuse RDOTMEBASE value from aux rc file here
+# to have it through the same name variable defined once there
+source <(grep '^RDOTMEBASE=' "${LSHELL_AUXRC}")
+
+
+# bins to transfer, where to get them from 
+
+export LBIN=${ONTO4_DROAMBINS}
+
+export LDOTMES=${ONTO4_DSSEBOU}/${RDOTMEBASE:-.rdotme}
+# export LDOTMES=${thisdir}/${RDOTMEBASE:-.rdotme}
+export BINBASE=$(basename $LBIN)
+
+# name of file to be used as an aggregated rcfile
+# to be created locally in a temp dir then 
+# delivered by Seed to its remote location shared accross all the further sessions
+export AGGSHRCBASE=.aggrc
+export LAGGSHRC=${SELF_TMP_DIR}/${AGGSHRCBASE}
+export LCOPYOFBASHPROFILE=${SELF_TMP_DIR}/remotebash_profile
+
+
+
+
+# set -x
+echo Verifying ssh to $RCONN ..
+C2V=${RCONN:?"Connecion is UNDEFINED"}
+# Purpose of below is to get into default dir, probably a home of the user, whatever is set to 
+# there on remote host, then figure it out and as second step, grab user .bash_profile file 
+# to use its content as a first part in the superceeding final rcfile
+ssh -q  "$C2V" 'pwd ; id -nu; if [ -r .bash_profile ]; then cat .bash_profile; else echo "# .bash_profile " ;fi' 2>&1 > $LCOPYOFBASHPROFILE || { echo Could not connect to ["$C2V"], see details below ; ssh  $C2V ; exit 2; }
+RDEFAULTWD=$( head -n 1  $LCOPYOFBASHPROFILE )
+sed -i '1d' $LCOPYOFBASHPROFILE
+RDEFAULTUSER=$( head -n 1  $LCOPYOFBASHPROFILE )
+sed -i '1d' $LCOPYOFBASHPROFILE
+
+# set user explicitly when implicit default is used
+[[ "$RCONN" =~ ^.*@.*$ ]] || export RCONN=${RDEFAULTUSER}@${RCONN}
+
+# BVER=$(ssh -q  "$C2V" 'echo $BASH_VERSION|awk -F. "{print \$1}"')
+# << this may fail when for some reason BASH_VERSION is not defined even though it is the bash shell
+BVER=$(ssh -q "$C2V" "bash --version|grep '^GNU'" | sed 's/^.* version \([0123456789.]*\).*$/\1/' | awk -F. '{ print $1 }')
+
+[[ "${BVER:-0}" -lt 4 ]] && { >&2 echo "$C2V :Unsupported bash version $BVER" ; exit -1 ; }
+
+# /etc/os-release file is not there on some versions
+# REMOSVER=$(ssh -q  "$C2V" 'source <(cat /etc/os-release) ; printf "%s" ${VERSION_ID}')
+REMOSVER=$(ssh -q  "$C2V" 'cat /etc/redhat-release 2>/dev/null' | grep -o '[0-9\.]*' | awk -F. ' { print $1 } ')
+[[ ${REMOSVER:-NotRH} == 'NotRH' ]] && {
+  DREMOSVER=$(ssh -q  "$C2V" 'cat /etc/debian_version' | grep -o '[0-9\.]*' | awk -F. ' { print $1 } ')
+  REMOSVER=$(( ${DREMOSVER:-9} - 2 ))
+}
+echo DRemote OS version: ${DREMOSVER}
+echo Remote OS version: ${REMOSVER}
+
+
+
+# Remote dir for particular session where the Guard is set first
+# then derived session share it
+SUSER=$(id -u)
+
+
+RMIMIC=${ONTO4_MIMIC:-vifm}
+export REMOTE_SESSION_RCDIR=${RDEFAULTWD}/.config/vifm/var/.rcof$(cat /etc/machine-id).${SUSER}.x86_64
+export REMOTE_SESSION_RCDIR=${RDEFAULTWD}/.local/share/${RMIMIC}/var/.rcof$(cat /etc/machine-id).${SUSER}.x86_64
+
+export RAGGSHRC=${REMOTE_SESSION_RCDIR}/$AGGSHRCBASE
+
+## Vim Runtime Path on remote
+## 
+export RVIMRP=${REMOTE_SESSION_RCDIR}/.vim
+# a file to keep pids of every sibling shell, including the Guard
+export SIBLING_SHELL_COUNTER=${REMOTE_SESSION_RCDIR}.sco
+export RINCVIMINT_SRC=${RVIMRP}/vimrc.inc
+## aux shell rc on remote
+export RSHELL_AUXRC=${REMOTE_SESSION_RCDIR}/.rsshrc
+
+# TODO: prerequisite check
+PREREQBINS="file tar zip rsync ts less tail"
+
+#_RDIR=${2?"No remote dir specified (2nd)"}
+# set -x
+P2=$2
+  case ${P2:-none} in
+      /) FOPT="  \( -path './etc/redhat-releas*' -o -path './opt/mba*' -o -path './home/lognet/*' \) -a  \( -type  f -o  -type l \) -a \( ! -path '**/jackrabbit/datastore/*' \)"
+            RDIR="/"
+	   ;;
+      h) FOPT="  \( ! -path '**/jackrabbit/datastore/*' \) -type f " 
+            RDIR="~"
+	   ;;
+      d) FOPT=" -type d " 
+            RDIR="/"
+	   ;;
+      i) INTERACTIVE=1
+	   ;;
+      ic) INTERACTIVE=1
+          shift ;shift 
+          ICMD="$@"
+          ICMD=${ICMD:?"ic option implies a command to exec spiecified"} 
+	   ;;
+      *) FOPT="\( -type  f -o  -type l \)"
+            RDIR="${P2:-${RDEFAULTWD}}"
+	   ;;
+  esac
+# Remote directory used globally in subshell and  exported functions
+export RDIR=$(echo $RDIR | sed 's|/*$|/|')   # ensure trailing slash is there and is the only one
+#file name pattern
+#set -x
+PAR3="$3"
+# if i follows a specific path given as 2nd param, interpret that as going to that path still be intaractive
+#
+[[ "$PAR3" == "i" ]] && { 
+ INTERACTIVE=1
+ # RDIR needs to be redefined since the call is done not from fzf but interactively
+ RDIR="${P2:-${RDEFAULTWD}}"  #Actually P2 cannot be undefined here since $3 is
+}
+
+PAR4="$4"
+FNAMEGREPFLTR="| grep ."
+FCNTNTGREPFLTR=
+if [ ! -z "$PAR3" ] ; then 
+  if [ ${PAR3:0:1} == '@' ] ; then # explicit list of files passed as @/path/to/file
+    export FPRELIST=${PAR3:1} ; 
+    [ -r $FPRELIST ] || { echo List file unavailable/missed : $FPRELIST; exit 2; }
+    # listfile after copy to remote side to be used as grep patterns for filtering output of the find
+    export RPRELIST=/tmp/ZZ_${thispid}_grep_filename_filter
+    # if list file is passed, copy it to remote now
+    scp $FPRELIST ${RCONN}:${RPRELIST}
+    export FNAMEGREPFLTR="| grep -f $RPRELIST"
+    if [ ! -z "$PAR4" ] ; then 
+      if [ ${PAR4:0:1} == '@' ] ; then # explicit list of files passed as @/path/to/file
+        FCNTNPAT=${PAR4:1} ; 
+        [ -r $FCNTNPAT ] || { echo Grep file content  pattern unavailable/missed : $FCNTNPAT ; exit 2 ; }
+        #  after copy to remote side to be used as content grep pattern for  filtering 
+        export RCNTNTPAT=/tmp/ZZ_${thispid}_grep_content_filter
+        #  copy it to remote now
+        scp $FCNTNPAT ${RCONN}:${RCNTNTPAT}
+        export FCNTNTGREPFLTR="|  grep -f $FCNTNTGREPFLTR"
+      fi 
+    fi
+  else # Pattern passed
+    FPAT="$3"
+    { export FSELOPT="-1 -q $FPAT"; }
+  fi
+fi
+
+#2>/dev/null 
+# export TRM="gnome-terminal --geometry=130x32"
+# export TRM="gnome-terminal "
+export TRM="gnome-terminal "
+# TRM shoudl be a terminal app wrapper expected 1st param as a command
+# since syntax of command param may differ (e.g. -e, -x, --command etc.)
+export XTERM=jjterm
+export TTERM=jjtermt
+export TRM="${XJJ_TERM:-jjterm}"
+#export TRM="lxterminal --geometry=130x32"
+# export TRM="t3 --geometry=130x32"
+#TRM=terminator
+# FOPT=
+FSELFBASENAME="${0##*/}"
+# [[ "${FSELFBASENAME:0:1}" == "d" ]] && FOPT="$FOPT -type d"
+# [[ "${FSELFBASENAME:0:1}" == "f" ]] && FOPT="$FOPT -type f"
+# [[ "${XJJ_FINDEPTH}" ]] && FOPT="$FOPT -maxdepth $XJJ_FINDEPTH"
+
+export RSHEV="export LESSKEY=${REMOTE_SESSION_RCDIR}/${RDOTMEBASE}/.less;export SSHVIMRP=$RVIMRP;export VIMINIT=source\ $RINCVIMINT_SRC;export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white;export EDITOR=vim"
+# export RSHEV="export LESSKEY=${REMOTE_SESSION_RCDIR}/${RDOTMEBASE}/.less
+#               export SSHVIMRP=$RVIMRP
+#               export VIMINIT=source\ $RINCVIMINT_SRC
+#               export MC_COLOR_TABLE=base_color=xterm=white,black:normal=white,black:selected=black,gray:marked=yellow,black:markselect=yellow,gray:errors=,black:input=,black:reverse:directory=,black:executable=green,black:menunormal=white,black:input=black,white
+#               export EDITOR=vim"
+
+
+##VXTODO {} for view in exec cannot handle space in filename - need to figure out the proper escaping for execute of terminal + exec + remote command
+RRC1="ssh -tt $RCONN less "
+RRC2="ssh -tt $RCONN less "
+SELERRLOG="/tmp/${0##*/}.fzfremoteselect.log"
+
+BUFF1=$(t0b)
+
+
+export -f  hbin_them handle_action xaste stat_them grab_them dpf act_menu remote_preview \
+           edit_vim edit_emacs view_less t0b trimmeta callIshell callvifm sel2clipboard
+
+RFINDCMD="find $RDIR"
+
+RFINDCMD="cd $RDIR && find  ${FOPT} -printf '%TY-%Tm-%Td %TI:%TM %m %10s ${FZFDLM}%p\n'"
+#RFINDCMD="cd $RDIR && find"
+BUFF20=$(t0b)
+# reusable primariy buffer, used fzf output in execute[-mulit]
+PRIMB=$(t0b)
+export PRIMB
+# echo $PRIMB
+
+
+
+
+FSELLINES=$(t0b)
+#ssh -q "$RCONN" "$RFINDCMD  -iregex \"^.*${FPAT}.*$\" " 2>"${SELERRLOG}" |
+
+export PATPART=
+[ ! -z "$FPAT" ] && export PATPART=" -a \( -iregex \"^.*${FPAT}.*$\" \) "
+if [ -z "$FCNTNPAT" ] ; then
+   RFINDCMD="cd $RDIR && find  ${FOPT} $PATPART -printf '%TY-%Tm-%Td %TI:%TM %m %10s ${FZFDLM}%p\n' $FNAMEGREPFLTR"
+else
+   RFINDCMD="cd $RDIR && find  ${FOPT} $PATPART $FNAMEGREPFLTR | while read f; do grep -f $RCNTNTPAT -l \$f; done "
+   GREPPEDLIST=/tmp/${TMPFX}.grepped_by_content
+   ssh -q "$RCONN" $RFINDCMD >"${GREPPEDLIST}"
+   $myself ${RCONN} ${RDIR} @${GREPPEDLIST}
+   exit 
+fi
+
+# get value of history file location from the composed rcfile
+# and reuse that value under other variable name RHK3 right away, in this script 
+# at finish, when collection remote history back
+# if that value happens to have a tilda, resolve it to the remote default dir 
+# detected earlier, as it is likely home dir which tilda means also
+source <(grep '^HISTKEEP3=' "${LSHELL_AUXRC}"|sed 's/HISTKEEP3/RHK3/'|sed "s|~|$RDEFAULTWD|")
+# RHK3 is set now, can be used in trap
+# trap to cleanup all temp files with our prefix on exit
+trap finish  exit
+ 
+
+if [[ ! "${INTERACTIVE:-0}" == "1" ]] && [[ -z "$DISPLAY" ]] && [[ -z "$TMUX" ]]; then
+  echo "WARN: Neither DISPLAY nor TMUX"
+  vxyn "Interactive shell option will be not available in this session, sure to continue?" || exit
+fi
+
+PrepIncs
+SeedIt
+
+
+RSHRC1=$REMOTE_SESSION_RCDIR/$(basename $RSHELL_RC_INC_EXPAND)
+RSHRC2=$REMOTE_SESSION_RCDIR/$(basename $RSHELL_RC_INC_NOEXPAND) 
+GUARDCMD="bash --rcfile <( cat ~/.bashrc $RSHRC1 $RSHRC2 | tee ${RAGGSHRC}; rm -rf $RSHRC1 $RSHRC2 )"
+GUARDCMD="bash --rcfile <( cat ${RAGGSHRC} )"
+ssh  -q -tt $RCONN -R 2323:diff7:22 -R 3128:lem:8765 -R 2020:localhost:22  "$GUARDCMD"  >/dev/null 2>&1 &
+
+#   export ONTO4_RHASTEPORT=2324
+#   export ONTO4_RHASTEURL=http://localhost:${ONTO4_RHASTEPORT}
+GUARDPID=$!
+
+if [[  ${INTERACTIVE:-0} == "1" ]] ; then 
+  # callIshell ${FOPT:-${RDEFAULTWD}}/. $ICMD  ## Why FOPT here?
+  # RDIR=${RDEFAULTWD} # No need, RDIR defined earlier 
+  callIshell dummyfile "$ICMD"
+  exit 
+else
+  echo GuardPID=$GUARDPID 
+fi 
+
+	 # --nth=-1 \
+ ssh -q "$RCONN" $RFINDCMD 2>"${SELERRLOG}"   $FNAMEGREPFLTR | 
+         fzf -m  \
+	 --color=dark \
+	 --print-query \
+	 --header="view:f3 edit:f4 zgrab:f5 stat:f6 hbin:f7 vfm:alt-f shell:M-m cp2clip:M-(i|r|v) alt-t:toggle_preview" \
+	 --prompt="${RCONN}[${RDIR}]>" \
+	 --expect="alt-h,f8,f9,alt-g" \
+	 --bind "alt-s:select-all" \
+	 --bind "alt-d:deselect-all" \
+	 --bind "alt-j:jump" \
+         --preview "remote_preview {}"\
+         --preview-window down:55% \
+         --bind "alt-t:toggle-preview" \
+	 --bind "f2:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; act_menu $PRIMB )" \
+	 --bind "alt-space:execute-multi(printf \"%s\n\" {}>$PRIMB  ; act_menu $PRIMB )" \
+	 --bind "ctrl-space:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; view_less $PRIMB )" \
+	 --bind "f3:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; view_less $PRIMB )" \
+	 --bind "f6:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; stat_them $PRIMB )" \
+	 --bind "f7:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; hbin_them $PRIMB )" \
+	 --bind "f5:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; grab_them $PRIMB )" \
+	 --bind "alt-e:execute-multi(    printf \"%s\n\" {}>$PRIMB  ; edit_emacs $PRIMB )" \
+	 --bind "f4:execute-multi(       printf \"%s\n\" {}>$PRIMB  ; edit_vim $PRIMB )" \
+	 --bind "alt-i:execute-multi(    printf \"%s\n\" {}>$PRIMB  ; sel2clipboard $PRIMB 0 )" \
+	 --bind "alt-r:execute-multi(    printf \"%s\n\" {}>$PRIMB  ; sel2clipboard $PRIMB 1 )" \
+	 --bind "alt-v:execute-multi(    printf \"%s\n\" {}>$PRIMB  ; sel2clipboard $PRIMB 2 )" \
+	 --bind "alt-f:execute(callvifm {})" \
+	 --bind "enter:execute(callIshell \'{}\')" \
+	 --bind "alt-a:execute(ec \"/ssh:${RCONN}|sudo:${RHOST}:$RDIR/{}\")" \
+	 --bind "alt-m:execute(callIshell {})"  >"$FSELLINES"  # all selected lines including metainfo on the left
+ECODE=$?
+
+[[ $ECODE -gt 0 ]] &&  { echo Selection of remote file cancelled exit with code ["$ECODE"]; exit $ECODE ; }
+#dpf $FSELLINES
+
+FSFN=$(t0b)
+
+sed "s/^.*${FZFDLM}//g" "${FSELLINES}" > "$FSFN" # seclected paths w/o meta info
+
+# first line of otucome is the  query, if --print-query is used
+# second  line of otucome is the name of pressed key (or empty line if default)
+
+export FZFQUERY=$(head -1 "$FSELLINES") 
+KEYPR=$(sed -n '2p' "$FSELLINES" ) 
+
+FPAYLOAD=$(t0b)
+
+sed '1,2d' "$FSFN"  >"$FPAYLOAD"
+
+case $KEYPR in
+    alt-h) OACT=haste
+	   ;;
+       f8) OACT=erase
+	   ;;
+    alt-g) OACT=grepmarked
+	   ;;
+       f9) OACT=grab
+	   ;;
+esac
+# redfining outcome after filtering expected keys out
+SFN="$PLOAD"
+NOFL=$(cat "$FPAYLOAD" |wc -l  )
+NOFW=$(cat "$FPAYLOAD" |wc -w  )
+
+[[ "$NOFL" -lt "$NOFW" ]] && { echo "WARNING: FILE NAME(S) SEEM TO CONTAIN SPACES!" ; exit 1; }
+
+handle_action "${OACT:-none}" "$RCONN" "$FPAYLOAD" "$RDIR"
+

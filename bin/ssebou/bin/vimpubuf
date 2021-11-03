@@ -1,0 +1,20 @@
+#!/bin/bash
+
+pubit () {
+ local _UPLCON=${ONTO4_HDIFFCON:-root@${CORPDIFF7}}
+ local _UPLPORT=${ONTO4_HDIFFPORT:-22}
+ local _APNAME=${1?"Missed file name"}
+ local _BASEN=$(basename ${_APNAME})
+ local _BHTML=${_BASEN}
+ local _XRD=/var/www/ppub
+ scp -q -o 'CheckHostIP no' -o 'StrictHostKeyChecking=no' -o 'UserKnownHostsFile=/dev/null' -P ${_UPLPORT} ${_APNAME} ${_UPLCON}://${_XRD}/${_BHTML}
+ echo http://${ONTO4_HDIFFHOST:-${CORPDIFF7}}/ppub/${_BHTML}
+}
+
+
+main () {
+ pubit "$@"
+}
+
+main "$@"
+

@@ -1,0 +1,3 @@
+#!/bin/bash
+setxkbmap us
+rofi -show window -width 70  -font "snap 22" -config ~/.i3/rofi.conf -regex

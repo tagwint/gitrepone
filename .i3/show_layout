@@ -1,0 +1,16 @@
+#!/bin/bash
+CLO=$(setxkbmap -query|awk '/lay/ { print $2 }')
+NLO=us
+[[ "$CLO" == "us" ]] && { NLO=ru ; BGC=\#00aa00; }
+[[ "$CLO" == "ru" ]] && { NLO=us ; BGC=\#00aaff; }
+
+IND=${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-\
+${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}-${NLO}
+
+echo ${IND^^}====${IND^^}|dzen2 -p 1  -y 450 -bg ${BGC} -fg black -fn "Sans:size=55" &
+BPID=$!
+notify-send ${NLO^^}
+sleep 0.15
+
+~/.i3/i3_show_savedlayouts
+kill $BPID

@@ -1,0 +1,31 @@
+#!/bin/bash
+NOFS=$(tmux ls | awk -F: '{ print $1 }' |  wc -l )
+if [[ $NOFS -eq 0 ]] 
+then 
+  echo No session to attach
+  echo Use
+  echo  tmux new -s YourSessionName 
+  echo to create your new session
+else
+  SELPATT=${1}
+  if [ "$SELPATT" ]
+  then 
+    HSELOPT=" -q $SELPATT"
+  else 
+    HSELOPT=
+  fi
+
+  SLINE=$(tmux list-panes -aF "#S:#I.#P 🗔 #W 🖽i#{s/ /_/:pane_title} ⩥ #{pane_start_command} ⩥ #{pane_current_command} ###{pane_pid} " | column -t |  fzf $HSELOPT)
+  [ "$?" -gt 0 ] && exit 
+  # SP=$(awk ' { print $1 } ' <<<"$SLINE")
+  SP=$(awk -F: ' { print $1 } ' <<<"$SLINE")
+  tmux select-pane -t "$SP"
+  if [ -z "${TMUX}" ] 
+  then 
+    tmux a  -t  "$SP" 
+    # Decided to not detach by default, if needed use -d explicitly from command line
+    # tmux a -d -t  "$SP" 
+  else 
+    tmux switch-client -t "$SP" 
+  fi
+fi

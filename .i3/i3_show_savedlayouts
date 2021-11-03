@@ -1,0 +1,11 @@
+#/bin/bash
+
+I3STSCR=$HOME/.i3/i3alwayseng.pl
+I3STPID=$(cat ${I3STSCR}.pid)
+
+#echo `date` status script pid is $I3STPID >>/tmp/deb1
+
+notify-send "Sending usr2 to $I3STPID"
+ 
+kill -SIGUSR2 $I3STPID
+

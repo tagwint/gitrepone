@@ -1,0 +1,17 @@
+#!/bin/bash
+estmp=/tmp/editserver
+selfdir=$(dirname $0)
+mkdir -p $estmp
+export EDITSERVER_TMP=$estmp
+# export EDITSERVER_CMD='terminator -e "vim %s"'
+GXS=$(( $(tput cols) * 15 / 15 ))
+GYS=$(( $(tput lines) * 12 / 15 ))
+GEOP="--geometry=${GXP}x${GYP}"
+GEOS="--geometry=${GXS}x${GYS}"
+TRM="xfce4-terminal $GEOS --command="
+export EDITSERVER_CMD='xfce4-terminal '$GEOS' --command "vim -i /tmp/ikeepviminfo %s"'
+# export EDITSERVER_CMD='st -e vim -i /tmp/ikeepviminfo %s'
+# export EDITSERVER_CMD='gvim -i /tmp/ikeepviminfo -f %s'
+# export EDITSERVER_CMD='gedit -f %s'
+# export EDITSERVER_CMD='gnome-terminal --command "vim -i /tmp/ikeepviminfo %s"'
+plackup -s Starman --workers 2 -p ${1:-9292} --host 127.0.0.1 -a ${selfdir}/editserver.psgi

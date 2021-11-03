@@ -1,0 +1,5 @@
+#!/bin/bash
+
+TIMESTAMP_FORMAT='%Y-%m-%dT%H:%M:%.S'
+cat - |ts $TIMESTAMP_FORMAT
+

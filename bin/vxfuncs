@@ -1,0 +1,361 @@
+# functions gathered here to be sourced at once
+# vim: ft=sh
+# =========
+
+# svn wrapper to not keep password savedd
+function svu ()
+{
+  local _arg
+  local _serv
+  local _auth
+  local _urlserv
+  local _wcserv
+  ## <<< must be local, otherwise they mess up from previous runs !!!
+  command svn --version >/dev/null || { echo "Subversion client svn seem not to be installed here: svn" ; return 1; }
+
+  # test if cwd is a working copy of some repo
+  svn info >/dev/null 2>&1 &&  _wcserv=$(svn info | grep ^URL | sed 's|^.*http.*://||;s|/.*$||g' 2>/dev/null)
+  if [[ -z ${_wcserv} ]] # no, it does not look like a wrk copy of some repo
+  then 
+    >&2 echo "INFO: No working copy here, in $(pwd)" 
+  else 
+    >&2 echo "INFO: Working copy from ${_wcserv} detected "
+  fi
+
+  # test if the argument contains some http* url
+  # echo "Checking arg against valid url ..."
+  [[ "$*" =~ http.*://([^/]*)/.*$ ]] && _urlserv=${BASH_REMATCH[1]}
+  if [[ -z ${_urlserv} ]] # no server in args 
+  then 
+    >&2 echo "INFO: No server name in" "${@}"
+  else 
+    >&2 echo "INFO: Server name ${_urlserv} detected "
+  fi
+
+  # none of wrk copy and url
+  if [[ "${_wcserv:-NOWCSVR}" == "NOWCSVR" ]] && [[ "${_urlserv:-NOURLSVR}" == "NOURLSVR" ]]
+  then 
+    >&2 echo "ERROR: Neither a working copy is here: $(pwd)"
+    >&2 echo "_____: Nor url provided in args"
+    return 1;
+  fi
+
+  # not a wrk but just url
+  if [[ "${_wcserv:-NOWCSVR}" == "NOWCSVR" ]] && [[ ! "${_urlserv:-NOURLSVR}" == "NOURLSVR" ]]
+  then 
+    _serv=${_urlserv}
+  fi
+
+  # just wrk
+  if [[ ! "${_wcserv:-NOWCSVR}" == "NOWCSVR" ]] && [[ "${_urlserv:-NOURLSVR}" == "NOURLSVR" ]]
+  then 
+    _serv=${_wcserv}
+  fi
+
+  # both  wrk and url relate to the same server
+  if [[ "${_wcserv:-NOWCSVR}" == "${_urlserv:-NOURLSVR}" ]]
+  then 
+    _serv=${_wcserv}
+  fi
+
+  # both wrk copy and url are there but mismatch
+  if [[ ! "${_wcserv:-NOWCSVR}" == "NOWCSVR" ]] && [[ ! "${_urlserv:-NOURLSVR}" == "NOURLSVR" ]] && [[ ! "${_wcserv}" == "${_urlserv}" ]]
+  then
+    >&2 echo "ERROR: Working copy mismatches requested url:"
+    >&2 echo "WC:${_wcserv}"
+    >&2 echo "URL:${_urlserv} "
+    return 1;
+  fi
+
+  case ${_serv:-NONE} in
+      svn.${CORPDOMAIN})
+          # _auth="--username ${CORPUSER} --password $(KRPWD ${CORPUSER}@${CORPDOMAIN}) " 
+          _pw=$(KRPWDE ${CORPUSER}@${CORPDOMAIN}) &&  _auth="--username $CORPUSER --password ${_pw}"
+          # below does not work due to tricky escaping
+          # TODO: it
+          # _auth=" --password-from-stdin --non-interactive <<<'$(KRPWDE ${CORPUSER}@${CORPDOMAIN})'"
+      ;;
+      github.com) 
+          _pw=$(KRPWDE githubsvn) && _auth="--password  ${_pw} " 
+      ;;
+      NONE) # should not get here
+         >&2 echo "ERROR: Neither working copy here, nor an url in args, nothing doing " ; return 1 
+      ;;
+      *)
+         >&2 echo "INFO: Unknown server for working copy, failing back to default svn"
+          
+  esac 
+  >&2 echo "INFO: Server to deal with detected: ${_serv}"
+  _arg="$@"
+  # echo ARG: ${_arg} 
+  >&2 echo -n "INFO: Args passed:"; >&2 printf '[%q] ' "$@"
+  >&2 echo
+  >&2 echo =========
+  if [[ ! -z "${_arg}" ]] 
+  then
+    [[ "${_auth:-none}" == "none" ]] &&  { >&2 echo "WARN: Auth for $_serv could not be obtained"; }
+    svn "$@"  ${_auth}
+  else
+    svn "$@"
+  fi
+}
+
+function vxyn ()
+{
+  local lhint=${1:-'Are you sure? (y/n)'}
+  local REPLY=N
+  local lRetVAR=${2:-VXRET}
+
+  read -p "$lhint"  
+  while [ ! "$REPLY" == "y" -a ! "$REPLY" == "n" ]
+  do 
+    read -p "Enter (y/n)?"  
+  done
+  if [ "$REPLY" == "y" ] 
+  then
+    echo yes
+    return 0
+  else 
+    echo no
+    return 1
+  fi
+# 0 means yes (success), 1 - no
+} 
+
+vagbkindex () {
+  local _VIBD=~/.bak/vagrant_machine_index
+  [[ -d ${_VIBD} ]] || mkdir ${_VIBD}
+  jq . ~/.vagrant.d/data/machine-index/index >"${_VIBD}/index_$(date +'%Y-%m-%d_%H%M%S')"
+}
+
+vagcd () {
+  local sel
+  sel=$(vagrant global-status | grep '^.......  ' | grep -v '^id '|fzf|awk '{print $NF}')
+  [[ -n "$sel" ]] && cd "$sel" && ls 
+}
+
+function vagsnap () {
+  local p n s r o SSN bpref src dst vagst
+  [ -f Vagrantfile ]              || { echo No Vagrantfile in this dir; return 1; }
+  vagst=$(vagrant status  | egrep  '\(virtualbox\)|\(lxc\)')
+  [[ -n "$vagst" ]] || { echo Neither vbox nor lxc ; return 1; } 
+  p=$({ egrep  '\(virtualbox\)|\(lxc\)' | awk '{print $NF}' | tr -d '()' ; }<<<"${vagst}")
+  case $p in
+    virtualbox)
+        vagrant snapshot ${1:-list}
+        ;;
+    lxc)
+        n=$({ egrep  '\(virtualbox\)|\(lxc\)' | awk '{print $1}' ; }<<<"${vagst}" )
+        s=$({ egrep  '\(virtualbox\)|\(lxc\)' | awk '{print $2}' ; }<<<"${vagst}" )
+        bpref=$(basename $(pwd))
+        o=${1:-list}
+        if [[ !  "${o}" == "list" ]]; then
+          [[ ${s} == "running" ]] && { echo $n is running, you may want to stop it first; return 1; }
+        fi;
+        r=$(sudo find -L /var/lib/lxc  -maxdepth 1 -type d -type d  -regex "^/var/lib/lxc/${bpref}_${n}.*$")
+        echo Content of $r dir:
+        sudo find -L $r -maxdepth 1 -type d  -name rootfs\* | awk -F/ '{ print $NF }'
+        case $o in
+          save)
+             SSN=${2:-"bak"}
+             echo Saving ${SSN} snapshot
+             dst=${r}/rootfs_${SSN}
+             echo Saving ...
+             vxyn "rsync -a --delete ${r}/rootfs/ ${dst}/ Sure to continue? " || return 1;
+             echo No Progess bar here ...
+             sudo  rsync -a --delete ${r}/rootfs/ ${dst}/ && echo Save Completed OK
+             ;;
+          restore)
+             SSN=${2:-"NONE"}
+             if [[ ! "$SSN" == "NONE"  ]] ; then
+               sudo ls ${r}/rootfs_${SSN} || { echo NO ${SSN} is there; return 1; }
+               src=${r}/rootfs_${SSN}
+             else 
+               src=$(sudo find $r -maxdepth 1 -type d -regex "^.*/rootfs.+$" | fzf)
+             fi
+             echo Restoring ${SSN} snapshot
+             dst=${r}/rootfs
+             vxyn "rsync -a --delete ${src}/ ${dst}/  Sure to continue? " || return 1;
+             echo Restoring ...
+             echo No Progess bar here ...
+             sudo  rsync -a --delete ${src}/ ${dst}/ && echo Restore Completed OK
+             ;;
+          list)
+             ## "Listing done above"
+             ;;
+          *)
+             echo "Unkonwn operation VM type $o"
+             ;;
+        esac
+        ;;
+    *)
+        echo "Unkonwn vag VM type $p"
+        return 1
+        ;;
+  esac
+}
+
+svfm () {
+  local c
+  c=$(which vfm)
+  sudo $c $*
+}
+
+lxa () {
+  local sel
+  sel=$(sudo lxc-ls -f | grep ' RUNNIN' | fzf | awk '{print $1}')
+  [[ -n "$sel" ]] && sudo lxc-attach -n "$sel" 
+}
+
+cxc () {
+  export CXX_BOXNAME="magneticone/centos-7"
+  export CXX_DISTKEY=lco
+  export CXX_HOSTNAME=${2}
+  cxx "$@"
+  unset $(env |grep CXX_|sed 's/=.*$//')
+}
+cxf () {
+  export CXX_BOXNAME="godfryd/lxc-fedora-29"
+  export CXX_DISTKEY=lfc
+  export CXX_HOSTNAME=${2}
+  # CXX_NWPFX=${CXX_NWPFX:-${VXMOSTNW:-${CXX_DEFAULTNWPFX}}}
+  cxx "$@"
+  unset $(env |grep CXX_|sed 's/=.*$//')
+}
+
+vagls () {
+  vagrant global-status "$@" | grep '^.......  ' | grep -v '^id '
+}
+
+vagdestroy () {
+  local id path
+  read -r id path  <<<"$(vagrant global-status | grep '^.......  ' | grep -v '^id '|fzf|awk '{print $1,$NF}')"
+  [[ -n "$id" ]] && vagrant destroy "$id"  
+  [[ -n "$path" ]] && vxyn "Sure to remove $path?" && rm -rf "$path"
+}
+
+
+hudok () {
+  local TOKEN CHAT_ID URL MESSAGE
+  TOKEN=$(KRPWDE ${CORPTGBOT}) 
+  CHAT_ID=${CORPTGCHATID}
+  MESSAGE="$*"
+  URL="https://api.telegram.org/bot$TOKEN/sendMessage"
+  curl -s -X POST $URL -d chat_id=$CHAT_ID -d text="$MESSAGE"
+}
+
+tgsend () {
+ local f u
+ f=$(mktemp);  cat - >$f 
+ local URL=${1:-$HBLOGNET}
+ u=$(cat $f)
+ hudok "$u" 
+ rm -f $f
+}
+
+zebra () {
+ local nrm inv dim hili patt
+ hili='[0m[31m'
+
+ patt=${1}
+ nrm='[0m'
+ inv='[7m'
+ dim='[2m'
+ if [[ -n "$hili" ]] ; then
+   cat - | sed -e "s/\($patt\)/$hili\1$nrm/g" | sed -e "n;s/^\(.*\)$/${dim}\1${nrm}/" 
+ else
+   cat - | sed -e "n;s/^\(.*\)$/${dim}\1${nrm}/"
+ fi
+}
+
+fcd () {
+ local searchdir
+ searchdir=${1:-$HOME}
+ local HSELOPT="-q $2"
+ [ -z "$2" ] &&  HSELOPT="-q $2"
+ local FZFOPTSSAVE
+ local FZFCOLORS
+ FZFOPTSSAVE=$FZF_DEFAULT_OPTS
+ FZFCOLORS="\
+ --color=fg:#d0d0d0,bg:-1,hl:#5f87af \
+ --color=fg+:#d0d0d0,bg+:#262626,hl+:#5fd7ff \
+ --color=info:#afaf87,prompt:#d7005f,pointer:#af5fff \
+ --color=marker:#87ff00,spinner:#af5fff,header:#87afaf"
+ FZF_DEFAULT_OPTS="--exact --tiebreak=begin $FZFCOLORS  --bind=*:toggle,alt-j:jump-accept  -m   "
+
+    # https://github.com/fish-shell/fish-shell/issues/1362
+    tmpfile=$(mktemp)
+    find $searchdir \( ! -regex '.*/\..*' \) ! -name __pycache__ -type d 2>/dev/null | fzf "$HSELOPT"  > $tmpfile
+    destdir=$(cat $tmpfile)
+    rm -f $tmpfile
+ FZF_DEFAULT_OPTS=$FZFOPTSSAVE
+
+    [ -z "$destdir" ] && return 1
+    cd $destdir
+}
+
+tsx () {
+  local TIMESTAMP_FORMAT='%Y-%m-%d-%H:%M:%S'
+  local Prepend
+  Prepend=${1}
+  while IFS= read -r line; do printf "%(${TIMESTAMP_FORMAT})T %s\n" '-1'  "${Prepend}${line}"; done
+}
+
+function voc() {                                                                                                                 
+   curl -s https://www.vocabulary.com/dictionary/$1 |                                                                                 
+   grep 'og:description' | sed 's/&#[0-9][0-9][0-9]//g' |                                                                             
+   awk -F "\"" '{print $4}'                                                                                                           
+};
+
+function czz() {
+  local HESLO tmpf
+  tmpf=$(mktemp "/tmp/XScratch.XXXXXX")
+  function dump() {
+    HESLO="$1"
+    echo  =  =  =  bara: 
+    lynx "https://bara.ujc.cas.cz/psjc/search.php?hledej=Hledej&heslo="$HESLO"&where=hesla&zobraz_ps=ps&numcchange=no&not_initial=1" -dump |
+    sed '1,/karty na stranu/d;/^Refere/,$d' 
+    echo  =  =  =  seznam:
+    
+    lynx -dump "https://slovnik.seznam.cz/preklad/cesky_rusky/$HESLO" |
+    sed '1,/^Hlavn. obsah/d;/^Refere/,$d;/Anglick.*Francouz.*Ital/,$d;/.BUTTON./d' 
+  }
+  dump "$1" > $tmpf
+  less $tmpf
+  rm $tmpf
+}
+
+ddif () {
+  LDIR=${1?"Left dir not specified"}
+  RDIR=${2?"Right dir not specified"}
+  
+  EXLD=/tmp/dircomapreignore
+  echo  '*.log'          >$EXLD
+  echo  'webkernel.log*'>>$EXLD
+  
+  echo LDIR=$LDIR
+  echo RDIR=$RDIR
+  echo #---
+  
+  diff -rq $LDIR $RDIR -X $EXLD              |   # comment
+   sed "s@$LDIR@\$LDIR@g;s@$RDIR@\$RDIR@g" |
+   sed 's/Only in \$RDIR/ROnly in x \$RDIR/g;s/Only in \$LDIR/LOnly \$LDIR/g'|
+   sed 's@: *@/@g'|
+   sed 's/[[:space:]]and[[:space:]]/ /g' |
+   sed 's/[[:space:]]x[[:space:]]/ /g' |
+   sed 's/[[:space:]]in[[:space:]]/ /g' |
+   sed 's/[[:space:]]differ//g' |
+   sed 's/^ROnly /ROnly - /g' |
+   sed 's/^ROnly/R/g;s/^LOnly/L/g;s/^Files/D/g' |
+   sort |
+   column -t
+}
+
+wnock () {
+  curl -s -m1 http://${1?"Host name to knock expected"}:31331/
+}
+
+       
+ export -f svu tsx czz voc ddif wnock
+
+

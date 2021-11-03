@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# PURPOSE: to be called from au in vim on buffer exit to save either/or
+# - content of the buffer (when vim used as an external editor from browser)
+# - file name for the history of recent used
+
+# script supposed to work on both local and remote same way
+
+LOCALVIMHIST=${ONTO4_DRCMDHIST:-/tmp}/${HOSTNAME} # this is for local
+# file history to be saved in the same file name as command history, but diffrent extention
+VIMRUEXT=${ONTO4_HEEXT:-vimru} #ONTO4_HEEXT can be defined locally, then it will be used to name local history files
+
+BFILE="${@:-NooNxe}"
+
+# this is how vim finds its temp dir, ensured no trailing backslash
+VIMTMPDIR=$(sed 's|/*$||' <<<"${TMPDIR:-/tmp}")
+
+#Regexp to ignore 
+IGNOREG='^'${VIMTMPDIR}'/tmp\..*$
+/tmp/crontab\..*$
+^EMPTYY$
+^XScratch.*$'
+
+REGEX="${VIMTMPDIR}/bash-fc\..*"     ; [[ "${BFILE}" =~  $REGEX ]] && USECASE="UC01_FCXE"   #https://en.wikipedia.org/wiki/Fc_(Unix) also in C-X C-E 
+REGEX="${VIMTMPDIR}/editserver/.*"   ; [[ "${BFILE}" =~  $REGEX ]] && USECASE="UC02_EMED"   #https://github.com/willmoffat/emacs-edit-chrome  
+REGEX="^.*svn-commit\..*tmp$"        ; [[ "${BFILE}" =~  $REGEX ]] && USECASE="UC03_SVNC"   #svn commit message
+
+
+# if name matches ignore list, do nothing, exit
+grep -qf <(for re in $IGNOREG; do printf "%s\n" $re; done) <<<"$BFILE"  && { echo match ; exit 0; }
+
+# echo "REGEX=${REGEX} BFILE is $BFILE USECASE IS ${USECASE:-None}">>/tmp/oooo
+case $USECASE in
+
+  UC01_FCXE)
+    cat "$BFILE" >> /tmp/ctrlXE
+    ;;
+
+  UC02_EMED)
+    VIMBAK=${HISTKEEP3:-${LOCALVIMHIST}}.editserver.$(TZ=Europe/Amsterdam date --iso-8601='seconds') # HISTKEEP3 only defined remotely, thus VIMBAK is defined appropriately
+    cat "$BFILE" > "${VIMBAK}"
+    ;;
+
+  UC03_SVNC)
+    VIMSVNCIM=${HISTKEEP3:-${LOCALVIMHIST}}.svnmessage
+    echo "==== $(TZ=Europe/Amsterdam date --iso-8601='seconds')" >>"${VIMSVNCIM}"
+    cat "$BFILE" >> "${VIMSVNCIM}"
+    ;;
+
+  *)
+    VIMHIST=${HISTKEEP3:-${LOCALVIMHIST}}.${VIMRUEXT}
+    if [[ -f "$BFILE" ]] ; then 
+       echo "$(TZ=Europe/Amsterdam date --iso-8601='seconds') ${BFILE}">>${VIMHIST} # HISTKEEP3 only defined remotely, thus VIMHIST is defined appropriately
+    else
+     : # do nothing, there's no saved file actually
+    fi
+    ;;
+esac
+

@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# set -x
+CST=$1
+PP=/tmp/aPPa
+T=/tmp/aXXa
+echo '!set headerInterval 9999'>$T
+echo '!set maxwidth 2500'>>$T
+# echo '!set silent true'>>$T
+echo '!set fastconnect true'>>$T
+
+if [ ! -z "${CST}" ] ; then
+ if [[ ${CST} =~ ^(.+)\/(.+)\@(.+)\/(.*)$ ]] ; then
+  # echo Using connection string: $CST
+  U=${BASH_REMATCH[1]}
+  P=${BASH_REMATCH[2]}
+  H=${BASH_REMATCH[3]}
+  xS=${BASH_REMATCH[4]}
+  #if last match contains colon, connection considered postgres
+  if [[ ${xS} =~ ^(.+)\:(.*)$ ]] ; then
+    S=${BASH_REMATCH[1]}
+    DESCR='jdbc:postgresql:'
+  else
+    DESCR='jdbc:oracle:thin:@'
+    S=$xS    
+  fi
+  echo 'Connecting as ['${U}/xxx@${H}/${S}']'
+  if [[ "${U}" == "sys" ]] ; then
+    echo ConnectionUserName=$U as sysdba>$PP
+  else 
+    echo ConnectionUserName=$U>$PP
+  fi 
+  echo ConnectionPassword=$P>>$PP
+  echo ConnectionURL=${DESCR}//${H}/$S>>$PP
+  # echo '!set silent true'>>$T
+  echo '!properties '${PP}>>$T
+
+ else
+  echo "$CST" does not seem to be a valid connections string
+  echo user/pwd@host/svc Notation is expected
+  exit 1
+ fi
+fi
+
+JV_DV=j8d7
+# JV_DV=j8d14
+
+
+if [ ! -t 0 ] ; then 
+ cat -  >> $T
+ cat $T | tee -a /tmp/.lastjsql | 
+   $JV_DV  2>&1 | 
+   egrep -v '^Driver|^Autocommit|^Connecting to|^Connected to|^0:|^sqlline> !|^sqlline vers|Error: READ_COMMITTED and SERIALIZABLE are the only valid transaction levels'
+ echo '<<< used connection: ['${U}/xxx@${H}/${S}']'
+else
+ echo Use for ORA: '!connect' jdbc:oracle:thin:@//host:port/svcid  '<user> <pwd>'
+  
+ echo Use for PG: ' !connect' jdbc:postgresql://host:5432/dbname  '<user> <pwd>'
+ # exec j8d7
+ exec $JV_DV
+fi
+# cat $T | j8d7 2>&1 |  egrep -v '^0:|^sqlline> !'

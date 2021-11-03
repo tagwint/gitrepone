@@ -1,0 +1,152 @@
+#!/bin/bash
+#
+# Creation of LXC container
+# 
+
+# This creates new instance of centos7
+ set -x
+[[ -f Vagrantfile ]] && { echo Vagrantfile already exists ; exit 1; }
+
+
+INUM=${1:?"No parameter specified, expected a numbier in range  1..150"}
+if ! [ "$INUM" -eq "$INUM" ] 2> /dev/null
+then
+    echo "$INUM does not look as integer"
+    exit 1
+else
+    [[ "$INUM" -lt 1 || "$INUM" -gt 150 ]] && { echo "$INUM is out of valid range"; exit 1; }
+fi
+
+NWPFX=${VXMOSTNW:-10.7.7.}
+HNPFX=lco$(echo $NWPFX | awk -F. '{ print $(NF-1) }')
+KMEN=${COKMEN:-7}
+IPT=$(( INUM + 100 ))
+HOSTNAME=${2:-${HNPFX}${IPT}}
+IPADDR=${NWPFX}$IPT
+BRIDGENAME=most5
+
+
+## If necessary created associated bridge
+## when destroying last lxc container, bridge may get removed automatically
+## that is why doing this 
+brctl show | grep "^$BRIDGENAME" || {
+sudo brctl addbr $BRIDGENAME 
+sudo ip address add ${NWPFX}1/24 dev $BRIDGENAME
+sudo ip link set $BRIDGENAME up 
+}
+
+cat >Vagrantfile<<EOV
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+Vagrant.configure("2") do |config|
+
+  config.vm.define :${HOSTNAME} do |centos|
+      centos.vm.box = "magneticone/centos-${KMEN}"
+      # centos.trigger.before :up do |trg|
+      #   trg.info = "Mounting shard before UP"
+      #   trg.run = {path: "sharedmount.sh"}
+      # end
+      centos.trigger.after :up do |trg|
+        trg.info = "Mounting shared after UP"
+        trg.run = {path: "sharedmount.sh"}
+      end
+      centos.vm.hostname = "${HOSTNAME}"
+      centos.vm.box_version = "${BOXVER:->=0}"
+      centos.vm.network "private_network", ip: "${IPADDR}", lxc__bridge_name: "$BRIDGENAME",
+      auto_config: false
+      centos.vm.provision :shell, path: "bootstrap.sh"
+      # config.ssh.keys_only = false
+      # set auto_update to false, if you do NOT want to check the correct 
+      # additions version when booting this machine
+      centos.ssh.forward_agent = true
+  end
+
+end
+EOV
+
+# TODO Associative array of shares
+# declare -A LXSHARE
+# LXSHARE[/vz/shared]=home/shared
+
+ATS=attachshare.sh
+cat >sharedmount.sh <<EOMS
+#!/usr/bin/env bash
+LXC_SUBD=\$(ls /var/lib/lxc -1 | grep '_${HOSTNAME}_' | sort | tail -n 1)
+notify-send "Mounting share"
+if [[ -n "\$LXC_SUBD" ]] ; then 
+  echo Creating $ATS script for mounting share
+  echo '#!/usr/bin/env bash'>$ATS
+  echo LXC_CFG=/var/lib/lxc/\${LXC_SUBD}/config>>$ATS
+  echo 'sudo grep ^#DYN \${LXC_CFG} && { echo Share seems already added ; exit 1; }'>>$ATS
+  echo 'sudo echo \#DYN_${HOSTNAME} dynamically added|sudo tee -a \${LXC_CFG}'>>$ATS
+  echo $'echo \'lxc.mount.entry=/vz/shared home/shared none bind,create=dir 0 0\'|sudo tee -a \${LXC_CFG}'>>$ATS
+  echo "vagrant reload" >>$ATS
+  chmod 0755 $ATS
+  echo Run $ATS to mount shared folder. Implies reload.
+else 
+  echo "Could not found LXC_PATH for $HOSTNAME container, Failed to create?"
+fi
+EOMS
+chmod 0755 sharedmount.sh
+cat >bootstrap.sh <<EOB
+#!/usr/bin/env bash
+useradd joker 
+echo '%joker ALL=(ALL) NOPASSWD: ALL'>/etc/sudoers.d/joker
+mkdir -p /home/joker/.ssh
+echo 'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAn9xxCkt0/rGNaAchLaufVoIcqMvEOFHjELOr9FVfUpGhQkeYcXanaQis2gt3KsGZMzNi8K9No88N6s6OT802yqptGKRZB2cBS+uPG8tpoKrRTUE+ZYYpBc0yO1C99HcqkGsYjVXJjltVnN5I/pc7h2SwU1Sd6caFMZSRQuveXeEz9HWSMwAJmlFb0R5q5zhMllL/Xg7g3O8v+UcaEEF+kRH6YvJmvQtJKkFsb9lII8IahIYxPhZcqaSZYF68lxh6qPwAH9gzrrK/KmFkxuMcNxO8E6lnbT7jiJyX+rDh0uu1N+q52VUgyhWbg0crRgWy1n6HXCgD2fW1skbv66C8yQ== viktorkh@cape4' >> /home/joker/.ssh/authorized_keys
+chmod 0700 /home/joker/.ssh
+chmod 0600 /home/joker/.ssh/authorized_keys
+chown -R joker.joker /home/joker
+sudo usermod -aG vagrant joker
+
+mkdir -p /root/.ssh
+echo '##ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAn9xxCkt0/rGNaAchLaufVoIcqMvEOFHjELOr9FVfUpGhQkeYcXanaQis2gt3KsGZMzNi8K9No88N6s6OT802yqptGKRZB2cBS+uPG8tpoKrRTUE+ZYYpBc0yO1C99HcqkGsYjVXJjltVnN5I/pc7h2SwU1Sd6caFMZSRQuveXeEz9HWSMwAJmlFb0R5q5zhMllL/Xg7g3O8v+UcaEEF+kRH6YvJmvQtJKkFsb9lII8IahIYxPhZcqaSZYF68lxh6qPwAH9gzrrK/KmFkxuMcNxO8E6lnbT7jiJyX+rDh0uu1N+q52VUgyhWbg0crRgWy1n6HXCgD2fW1skbv66C8yQ== viktorkh@cape4' >> /root/.ssh/authorized_keys
+chmod 0700 /root/.ssh
+chmod 0600 /root/.ssh/authorized_keys
+
+# yum clean all
+# yum -y update 
+# yum -y install wget epel-release 
+# yum -y install tcping vim 
+EOB
+
+# cat >sshconfinsert <<EOS
+# #dynamically entered by $0
+# Host $HOSTNAME
+# 	User root
+# 	Hostname ${IPADDR}
+
+# EOS
+
+echo "${IPADDR} $HOSTNAME">etchostsinsert
+
+# sudo sed -i  "/^...EOFVAGRANT/ {
+#          h
+#          r etchostsinsert
+#          g
+#          N
+#      }" /etc/hosts
+
+###EOFVAGRANT
+sudo sed -i -e '/^...BOFVAGRANT/r etchostsinsert' /etc/hosts
+
+
+# # https://unix.stackexchange.com/a/193498/84561
+# sudo ed -s /etc/hosts <<IN
+# /^...EOFVAGRANT/-r etchostsinsert
+# w
+# q
+# IN
+
+
+# sed -i  "/^...EOFVAGRANT/ {
+#          h
+#          r sshconfinsert
+#          g
+#          N
+#      }" ~/.ssh/config
+
+vagrant up --provider=lxc && echo $HOSTNAME has been prepared
+ls -lha
+./attachshare.sh
+

@@ -1,0 +1,35 @@
+#!/bin/bash
+
+TMPFX=$(printf "%s_%d" TRM $$)
+
+OCFG="$HOME/.config/terminator/config"
+
+BR=46
+BG=52
+BB=54
+
+DR=11
+DG=11
+DB=11
+
+R=$(( BR + (RANDOM + RANDOM) % $DR))
+G=$(( BG + (RANDOM + RANDOM) % $DG))
+B=$(( BB + (RANDOM + RANDOM) % $DB))
+
+
+
+RGB=$(printf "#%02x%02x%02x" $R $G $B)
+
+
+ACFG=$(mktemp "/tmp/${TMPFX}.XXXXXX")
+#sed "s/background_color = .*$/background_color = \"${RGB}\"/g" "$OCFG" > $ACFG
+# only (slightly) change bk color for the default profile, not all of them
+sed "0,/background_color/ s/background_color = .*$/background_color = \"${RGB}\"/g" "$OCFG" > $ACFG
+trap 'rm $ACFG' exit
+
+terminator -u -g "$ACFG"  "$@" 
+
+
+
+
+

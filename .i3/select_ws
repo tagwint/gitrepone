@@ -1,0 +1,14 @@
+#!/bin/bash
+
+#SRCWS=$(i3-msg -t get_workspaces | jq '.[] | .name ' -c -r | fzf )
+ 
+#| # awk -F: '{ if ($2 == "") { printf "%s:%s\n",$1,$1 } else print '} 
+#| fzf -1 -q $WSNFROM | awk -F: '{print $2}')
+#SELEX=$?
+#[[ "$SELEX" -gt 0 ]] &&  exit 1
+#-fg "#845454" -bg "#2e2e2e" -hlfg "#ffb964" -hlbg "#000100" 
+SELNO=$(i3-msg -t get_workspaces | jq '.[] | .name ' -c -r | rofi -i -dmenu -font "snap 33" -width 61 -p "WorkSpaces $1: ")
+SELEX=$?
+[[ "$SELEX" -gt 0 ]] &&  exit 1
+i3-msg -t command "$1 workspace $SELNO"
+
